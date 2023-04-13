@@ -3,7 +3,6 @@ package com.purbon.kafka.topology.actions.topics;
 import com.purbon.kafka.topology.actions.BaseAction;
 import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
 import com.purbon.kafka.topology.model.Topic;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -15,9 +14,12 @@ import java.util.*;
 public class CreateTopicAction extends BaseAction {
 
   private final TopologyBuilderAdminClient adminClient;
-  @Getter
   private final Topic topic;
   private final String fullTopicName;
+
+  public String getTopic() {
+    return fullTopicName;
+  }
 
   @Override
   public void run() throws IOException {
