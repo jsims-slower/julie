@@ -3,16 +3,16 @@ package com.purbon.kafka.topology.model.schema;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.purbon.kafka.topology.model.Topic;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
-import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public class Subject {
 
-  private Optional<String> schemaFile;
-  private Optional<String> recordType;
-  private Optional<String> optionalCompatibility;
-  private Optional<String> optionalFormat;
-  private SubjectKind kind;
+  private final Optional<String> schemaFile;
+  private final Optional<String> recordType;
+  private final Optional<String> optionalCompatibility;
+  private final Optional<String> optionalFormat;
+  private final SubjectKind kind;
 
   public enum SubjectKind {
     KEY("key"),
@@ -31,29 +31,45 @@ public class Subject {
       Optional<JsonNode> optionalFormat,
       Optional<JsonNode> optionalCompatibility,
       SubjectKind kind) {
-    this.schemaFile = schemaFileJsonNode.map(JsonNode::asText);
-    this.recordType = recordTypeJsonNode.map(JsonNode::asText);
-    this.optionalCompatibility = optionalCompatibility.map(JsonNode::asText);
-    this.optionalFormat = optionalFormat.map(JsonNode::asText);
+    this.schemaFile = schemaFileJsonNode
+        .map(JsonNode::asText)
+        .map(String::trim)
+        .filter(Predicate.not(String::isEmpty));
+    this.recordType = recordTypeJsonNode
+        .map(JsonNode::asText)
+        .map(String::trim)
+        .filter(Predicate.not(String::isEmpty));
+    this.optionalCompatibility = optionalCompatibility
+        .map(JsonNode::asText)
+        .map(String::trim)
+        .filter(Predicate.not(String::isEmpty));
+    this.optionalFormat = optionalFormat
+        .map(JsonNode::asText)
+        .map(String::trim)
+        .filter(Predicate.not(String::isEmpty));
     this.kind = kind;
   }
 
   public Subject(String schemaFile, String recordType, SubjectKind kind) {
-    this.schemaFile = Optional.ofNullable(schemaFile);
-    this.recordType = Optional.ofNullable(recordType);
+    this.schemaFile = Optional
+        .ofNullable(schemaFile)
+        .map(String::trim)
+        .filter(Predicate.not(String::isEmpty));
+    this.recordType = Optional
+        .ofNullable(recordType)
+        .map(String::trim)
+        .filter(Predicate.not(String::isEmpty));
+    this.optionalCompatibility = Optional.empty();
+    this.optionalFormat = Optional.empty();
     this.kind = kind;
   }
 
-  public String getSchemaFile() throws IOException {
-    return schemaFile.orElseThrow(() -> new IOException("SchemaFile not present"));
+  public Optional<String> getOptionalSchemaFile() {
+    return schemaFile;
   }
 
-  public boolean hasSchemaFile() {
-    return schemaFile.isPresent();
-  }
-
-  private String recordTypeAsString() throws IOException {
-    return recordType.orElseThrow(() -> new IOException("Missing record type for " + schemaFile));
+  private String recordTypeAsString() {
+    return recordType.orElseThrow(() -> new RuntimeException("Missing record type for " + schemaFile));
   }
 
   public String getFormat() {
@@ -64,7 +80,7 @@ public class Subject {
     return optionalCompatibility;
   }
 
-  public String buildSubjectName(Topic topic) throws IOException {
+  public String buildSubjectName(Topic topic) {
     switch (topic.getSubjectNameStrategy()) {
       case TOPIC_NAME_STRATEGY:
         return topic.toString() + "-" + kind.label;

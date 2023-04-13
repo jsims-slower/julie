@@ -2,8 +2,10 @@ package com.purbon.kafka.topology.actions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.purbon.kafka.topology.utils.JSON;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public abstract class BaseAction implements Action {
@@ -34,5 +36,11 @@ public abstract class BaseAction implements Action {
     } catch (JsonProcessingException e) {
       return "";
     }
+  }
+
+  protected <T> Map<String, T> sortMap(Map<String, T> unsortedMap) {
+    TreeMap<String, T> treeMap = new TreeMap<>(Comparator.naturalOrder());
+    treeMap.putAll(unsortedMap);
+    return treeMap;
   }
 }

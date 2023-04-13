@@ -47,6 +47,7 @@ public class CreateTopicAction extends BaseAction {
     map.put("Operation", getClass().getName());
     map.put("Topic", fullTopicName);
     map.put("Action", "create");
+    map.put("Configs", sortMap(topic.getConfig()));
     return map;
   }
 

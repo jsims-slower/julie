@@ -22,13 +22,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Log4j2
 public class TopicManager implements ExecutionPlanUpdater {
-
-  private static final Logger LOGGER = LogManager.getLogger(TopicManager.class);
 
   public static final String NUM_PARTITIONS = "num.partitions";
   public static final String REPLICATION_FACTOR = "replication.factor";
@@ -86,10 +84,17 @@ public class TopicManager implements ExecutionPlanUpdater {
     createTopicActions.forEach(plan::add); // Do createActions before update actions
     updateTopicConfigActions.forEach(plan::add);
 
-    topics.forEach(
-        (topicName, topic) -> {
-          plan.add(new RegisterSchemaAction(schemaRegistryManager, topic, topicName));
-        });
+    topics
+        .entrySet()
+        .stream()
+        .flatMap(topicEntry -> Stream.ofNullable(
+            RegisterSchemaAction.createIfHasChanged(
+                schemaRegistryManager,
+                topicEntry.getValue(),
+                topicEntry.getKey()
+            )
+        ))
+        .forEach(plan::add);
 
     if (config.isAllowDeleteTopics()) {
       // Handle topic delete: Topics in the initial list, but not present anymore after a
@@ -100,7 +105,7 @@ public class TopicManager implements ExecutionPlanUpdater {
               .collect(Collectors.toList());
 
       if (topicsToBeDeleted.size() > 0) {
-        LOGGER.debug("Topic to be deleted: " + StringUtils.join(topicsToBeDeleted, ","));
+        log.debug("Topic to be deleted: {}", topicsToBeDeleted);
         plan.add(new DeleteTopics(adminClient, topicsToBeDeleted));
       }
     }
@@ -131,13 +136,11 @@ public class TopicManager implements ExecutionPlanUpdater {
 
     listOfTopics =
         listOfTopics.stream().filter(this::matchesPrefixList).collect(Collectors.toSet());
-    if (listOfTopics.size() > 0)
-      LOGGER.debug(
-          "Full list of managed topics in the cluster: "
-              + StringUtils.join(new ArrayList<>(listOfTopics), ","));
+    if (!listOfTopics.isEmpty())
+      log.debug("Full list of managed topics in the cluster: {}", listOfTopics);
 
     if (!config.shouldVerifyRemoteState()) {
-      LOGGER.warn(
+      log.warn(
           "Remote state verification disabled, this is not a good practice, be aware"
               + "in future versions, this check is going to become mandatory.");
     }
@@ -162,7 +165,7 @@ public class TopicManager implements ExecutionPlanUpdater {
           "Your remote state has changed since the last execution, this topics: "
               + StringUtils.join(delta, ",")
               + " are in your local state, but not in the cluster, please investigate!";
-      LOGGER.error(errorMessage);
+      log.error(errorMessage);
       throw new RemoteValidationException(errorMessage);
     }
   }
@@ -174,7 +177,7 @@ public class TopicManager implements ExecutionPlanUpdater {
   private boolean matchesPrefixList(String topic) {
     boolean matches =
         managedPrefixes.size() == 0 || managedPrefixes.stream().anyMatch(topic::startsWith);
-    LOGGER.debug(String.format("Topic %s matches %s with $s", topic, matches, managedPrefixes));
+    log.debug("Topic {} matches {} with {}", topic, matches, managedPrefixes);
     return matches;
   }
 

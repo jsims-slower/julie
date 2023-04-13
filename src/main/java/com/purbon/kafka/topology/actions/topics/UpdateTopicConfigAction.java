@@ -44,13 +44,13 @@ public class UpdateTopicConfigAction extends BaseAction {
   protected Map<String, Object> props() {
     Map<String, Object> changes = new LinkedHashMap<>();
     if (topicConfigUpdatePlan.hasNewConfigs()) {
-      changes.put("NewConfigs", topicConfigUpdatePlan.getNewConfigValues());
+      changes.put("NewConfigs", sortMap(topicConfigUpdatePlan.getNewConfigValues()));
     }
     if (topicConfigUpdatePlan.hasUpdatedConfigs()) {
-      changes.put("UpdatedConfigs", topicConfigUpdatePlan.getUpdatedConfigValues());
+      changes.put("UpdatedConfigs", sortMap(topicConfigUpdatePlan.getUpdatedConfigValues()));
     }
     if (topicConfigUpdatePlan.hasDeletedConfigs()) {
-      changes.put("DeletedConfigs", topicConfigUpdatePlan.getDeletedConfigValues());
+      changes.put("DeletedConfigs", sortMap(topicConfigUpdatePlan.getDeletedConfigValues()));
     }
     if (topicConfigUpdatePlan.isUpdatePartitionCount()) {
       changes.put("UpdatedPartitionCount", topicConfigUpdatePlan.getTopicPartitionCount());

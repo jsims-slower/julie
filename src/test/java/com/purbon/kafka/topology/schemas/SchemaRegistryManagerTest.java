@@ -1,8 +1,6 @@
 package com.purbon.kafka.topology.schemas;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import com.purbon.kafka.topology.schemas.SchemaRegistryManager.SchemaRegistryManagerException;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
@@ -12,29 +10,25 @@ import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
+import io.confluent.kafka.schemaregistry.json.JsonSchema;
 import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
+import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
 public class SchemaRegistryManagerTest {
 
   private static final String subjectName = "bananas";
-  private static final String schemaTypeAvro = "AVRO";
-  private static final String schemaTypeJson = "JSON";
-  private static final String schemaTypeProtobuf = "PROTOBUF";
   private static final String simpleSchema = "{\"type\": \"string\"}";
 
   private SchemaRegistryClient client;
@@ -57,7 +51,8 @@ public class SchemaRegistryManagerTest {
   @Test
   public void shouldRegisterTheSchema() throws Exception {
 
-    final int schemaId = manager.save(subjectName, schemaTypeAvro, simpleSchema);
+    ParsedSchema parsedSchema = manager.parseSchema(AvroSchema.TYPE, simpleSchema);
+    final int schemaId = manager.register(subjectName, parsedSchema);
     assertThat(schemaId).isEqualTo(1);
 
     assertThat(client.getAllSubjects()).hasSize(1).containsExactly(subjectName);
@@ -70,7 +65,8 @@ public class SchemaRegistryManagerTest {
     Path schemaFilePath =
         Paths.get(getClass().getClassLoader().getResource("schemas/bar-value.avsc").toURI());
 
-    final int schemaId = manager.register(subjectName, schemaFilePath, AvroSchema.TYPE);
+    ParsedSchema parsedSchema = manager.readSchemaFile(AvroSchema.TYPE, schemaFilePath);
+    final int schemaId = manager.register(subjectName, parsedSchema);
     assertThat(schemaId).isEqualTo(1);
 
     assertThat(client.getAllSubjects()).hasSize(1).containsExactly(subjectName);
@@ -78,13 +74,14 @@ public class SchemaRegistryManagerTest {
   }
 
   @Test
-  public void shouldRegisterTheSchemawithCompatibility()
+  public void shouldRegisterTheSchemaWithCompatibility()
       throws IOException, RestClientException, URISyntaxException {
 
     Path schemaFilePath =
         Paths.get(getClass().getClassLoader().getResource("schemas/bar-value.avsc").toURI());
 
-    final int schemaId = manager.register(subjectName, schemaFilePath, AvroSchema.TYPE);
+    ParsedSchema parsedSchema = manager.readSchemaFile(AvroSchema.TYPE, schemaFilePath);
+    final int schemaId = manager.register(subjectName, parsedSchema);
     assertThat(schemaId).isEqualTo(1);
 
     String compLevel = manager.setCompatibility(subjectName, "FORWARD");
@@ -94,23 +91,15 @@ public class SchemaRegistryManagerTest {
 
   @Test(expected = SchemaRegistryManagerException.class)
   public void shouldThrowAnExceptionWithFailedFilePath() {
-    manager.register(subjectName, "schemas/wrong-file-value.avsc", AvroSchema.TYPE);
+    Path schemaFilePath = manager.schemaFilePath("schemas/wrong-file-value.avsc");
+    manager.readSchemaFile(AvroSchema.TYPE, schemaFilePath);
   }
 
   @Test
-  public void shouldRegisterSchemasWithARelativePath() {
-    SchemaRegistryManager managerSpy = Mockito.spy(manager);
-    managerSpy.register(subjectName, "schemas/bar-value.avsc", AvroSchema.TYPE);
-    Path mayBeAbsolutePath = Paths.get(rootDir.toString(), "schemas/bar-value.avsc");
-    verify(managerSpy, times(1)).register(subjectName, mayBeAbsolutePath, AvroSchema.TYPE);
-  }
-
-  @Test
-  public void shouldRegisterSchemasWithAnAbsolutePath() {
-    SchemaRegistryManager managerSpy = Mockito.spy(manager);
-    Path mayBeAbsolutePath = Paths.get(rootDir.toString(), "schemas/bar-value.avsc");
-    managerSpy.register(subjectName, mayBeAbsolutePath.toString(), AvroSchema.TYPE);
-    verify(managerSpy, times(1)).register(subjectName, mayBeAbsolutePath, AvroSchema.TYPE);
+  public void shouldMakePathFromARelativePath() {
+    Path expectedPath = Paths.get(rootDir.toString(), "schemas/bar-value.avsc");
+    Path actualPath = manager.schemaFilePath( "schemas/bar-value.avsc");
+    assertThat(actualPath).isEqualTo(expectedPath);
   }
 
   @Test
@@ -118,8 +107,8 @@ public class SchemaRegistryManagerTest {
 
     Path schemaFilePath =
         Paths.get(getClass().getClassLoader().getResource("schemas/test.avsc").toURI());
-    final String sampleSchema = new String(Files.readAllBytes(schemaFilePath));
-    assertThat(manager.save(subjectName, schemaTypeAvro, sampleSchema)).isEqualTo(1);
+    ParsedSchema parsedSchema = manager.readSchemaFile(AvroSchema.TYPE, schemaFilePath);
+    assertThat(manager.register(subjectName, parsedSchema)).isEqualTo(1);
 
     Path updatedSchemaFilePath =
         Paths.get(
@@ -127,13 +116,12 @@ public class SchemaRegistryManagerTest {
                 .getClassLoader()
                 .getResource("schemas/test-backward-compatible.avsc")
                 .toURI());
-    final String updatedSampleSchema = new String(Files.readAllBytes(updatedSchemaFilePath));
 
-    final ParsedSchema persedUpdatedUserSchema =
-        client.parseSchema(schemaTypeAvro, updatedSampleSchema, Collections.emptyList()).get();
-    assertThat(client.testCompatibility(subjectName, persedUpdatedUserSchema)).isTrue();
+    final ParsedSchema parsedUpdatedUserSchema =
+        manager.readSchemaFile(AvroSchema.TYPE, updatedSchemaFilePath);
+    assertThat(client.testCompatibility(subjectName, parsedUpdatedUserSchema)).isTrue();
 
-    assertThat(manager.save(subjectName, schemaTypeAvro, updatedSampleSchema)).isEqualTo(2);
+    assertThat(manager.register(subjectName, parsedUpdatedUserSchema)).isEqualTo(2);
 
     assertThat(client.getAllSubjects()).hasSize(1).containsExactly(subjectName);
     assertThat(client.getAllVersions(subjectName)).hasSize(2).containsExactly(1, 2);
@@ -145,8 +133,8 @@ public class SchemaRegistryManagerTest {
 
     Path schemaFilePath =
         Paths.get(getClass().getClassLoader().getResource("schemas/test.avsc").toURI());
-    final String sampleSchema = new String(Files.readAllBytes(schemaFilePath));
-    assertThat(manager.save(subjectName, schemaTypeAvro, sampleSchema)).isEqualTo(1);
+    ParsedSchema parsedSchema = manager.readSchemaFile(AvroSchema.TYPE, schemaFilePath);
+    assertThat(manager.register(subjectName, parsedSchema)).isEqualTo(1);
     manager.setCompatibility(subjectName, "FORWARD");
     assertThat(client.getCompatibility(subjectName)).isEqualTo("FORWARD");
 
@@ -156,10 +144,9 @@ public class SchemaRegistryManagerTest {
                 .getClassLoader()
                 .getResource("schemas/test-backward-compatible.avsc")
                 .toURI());
-    final String updatedSampleSchema = new String(Files.readAllBytes(updatedSchemaFilePath));
 
     final ParsedSchema parsedUpdatedSampleSchema =
-        client.parseSchema(schemaTypeAvro, updatedSampleSchema, Collections.emptyList()).get();
+        manager.readSchemaFile(AvroSchema.TYPE, updatedSchemaFilePath);
     assertThat(client.testCompatibility(subjectName, parsedUpdatedSampleSchema)).isFalse();
   }
 
@@ -168,8 +155,8 @@ public class SchemaRegistryManagerTest {
 
     Path schemaFilePath =
         Paths.get(getClass().getClassLoader().getResource("schemas/test.json").toURI());
-    final String sampleSchema = new String(Files.readAllBytes(schemaFilePath));
-    assertThat(manager.save(subjectName, schemaTypeJson, sampleSchema)).isEqualTo(1);
+    ParsedSchema parsedSchema = manager.readSchemaFile(JsonSchema.TYPE, schemaFilePath);
+    assertThat(manager.register(subjectName, parsedSchema)).isEqualTo(1);
 
     Path updatedSchemaFilePath =
         Paths.get(
@@ -177,14 +164,13 @@ public class SchemaRegistryManagerTest {
                 .getClassLoader()
                 .getResource("schemas/test-forward-compatible.json")
                 .toURI());
-    final String updatedSampleSchema = new String(Files.readAllBytes(updatedSchemaFilePath));
 
     final ParsedSchema parsedUpdatedSampleSchema =
-        client.parseSchema(schemaTypeJson, updatedSampleSchema, Collections.emptyList()).get();
+        manager.readSchemaFile(JsonSchema.TYPE, updatedSchemaFilePath);
 
     assertThat(client.testCompatibility(subjectName, parsedUpdatedSampleSchema)).isTrue();
 
-    assertThat(manager.save(subjectName, schemaTypeJson, updatedSampleSchema)).isEqualTo(2);
+    assertThat(manager.register(subjectName, parsedUpdatedSampleSchema)).isEqualTo(2);
 
     assertThat(client.getAllSubjects()).hasSize(1).containsExactly(subjectName);
     assertThat(client.getAllVersions(subjectName)).hasSize(2).containsExactly(1, 2);
@@ -196,8 +182,8 @@ public class SchemaRegistryManagerTest {
 
     Path schemaFilePath =
         Paths.get(getClass().getClassLoader().getResource("schemas/test.json").toURI());
-    final String sampleSchema = new String(Files.readAllBytes(schemaFilePath));
-    assertThat(manager.save(subjectName, schemaTypeJson, sampleSchema)).isEqualTo(1);
+    ParsedSchema parsedSchema = manager.readSchemaFile(JsonSchema.TYPE, schemaFilePath);
+    assertThat(manager.register(subjectName, parsedSchema)).isEqualTo(1);
 
     Path updatedSchemaFilePath =
         Paths.get(
@@ -205,10 +191,9 @@ public class SchemaRegistryManagerTest {
                 .getClassLoader()
                 .getResource("schemas/test-backward-compatible.json")
                 .toURI());
-    final String updatedSampleSchema = new String(Files.readAllBytes(updatedSchemaFilePath));
 
     final ParsedSchema parsedUpdatedSampleSchema =
-        client.parseSchema(schemaTypeJson, updatedSampleSchema, Collections.emptyList()).get();
+        manager.readSchemaFile(JsonSchema.TYPE, updatedSchemaFilePath);
     assertThat(client.testCompatibility(subjectName, parsedUpdatedSampleSchema)).isFalse();
   }
 
@@ -217,8 +202,8 @@ public class SchemaRegistryManagerTest {
 
     Path schemaFilePath =
         Paths.get(getClass().getClassLoader().getResource("schemas/test.proto").toURI());
-    final String sampleSchema = new String(Files.readAllBytes(schemaFilePath));
-    assertThat(manager.save(subjectName, schemaTypeProtobuf, sampleSchema)).isEqualTo(1);
+    ParsedSchema parsedSchema = manager.readSchemaFile(ProtobufSchema.TYPE, schemaFilePath);
+    assertThat(manager.register(subjectName, parsedSchema)).isEqualTo(1);
 
     Path updatedSchemaFilePath =
         Paths.get(
@@ -226,13 +211,12 @@ public class SchemaRegistryManagerTest {
                 .getClassLoader()
                 .getResource("schemas/test-backward-compatible.proto")
                 .toURI());
-    final String updatedSampleSchema = new String(Files.readAllBytes(updatedSchemaFilePath));
 
     final ParsedSchema parsedUpdatedSampleSchema =
-        client.parseSchema(schemaTypeProtobuf, updatedSampleSchema, Collections.emptyList()).get();
+        manager.readSchemaFile(ProtobufSchema.TYPE, updatedSchemaFilePath);
     assertThat(client.testCompatibility(subjectName, parsedUpdatedSampleSchema)).isTrue();
 
-    assertThat(manager.save(subjectName, schemaTypeProtobuf, updatedSampleSchema)).isEqualTo(2);
+    assertThat(manager.register(subjectName, parsedUpdatedSampleSchema)).isEqualTo(2);
 
     assertThat(client.getAllSubjects()).hasSize(1).containsExactly(subjectName);
     assertThat(client.getAllVersions(subjectName)).hasSize(2).containsExactly(1, 2);
@@ -244,8 +228,8 @@ public class SchemaRegistryManagerTest {
 
     Path schemaFilePath =
         Paths.get(getClass().getClassLoader().getResource("schemas/test.proto").toURI());
-    final String sampleSchema = new String(Files.readAllBytes(schemaFilePath));
-    assertThat(manager.save(subjectName, schemaTypeProtobuf, sampleSchema)).isEqualTo(1);
+    ParsedSchema parsedSchema = manager.readSchemaFile(ProtobufSchema.TYPE, schemaFilePath);
+    assertThat(manager.register(subjectName, parsedSchema)).isEqualTo(1);
 
     Path updatedSchemaFilePath =
         Paths.get(
@@ -253,10 +237,9 @@ public class SchemaRegistryManagerTest {
                 .getClassLoader()
                 .getResource("schemas/test-forward-compatible.proto")
                 .toURI());
-    final String updatedSampleSchema = new String(Files.readAllBytes(updatedSchemaFilePath));
 
     final ParsedSchema parsedUpdatedSampleSchema =
-        client.parseSchema(schemaTypeProtobuf, updatedSampleSchema, Collections.emptyList()).get();
+        manager.readSchemaFile(ProtobufSchema.TYPE, updatedSchemaFilePath);
     assertThat(client.testCompatibility(subjectName, parsedUpdatedSampleSchema)).isFalse();
   }
 
@@ -264,6 +247,6 @@ public class SchemaRegistryManagerTest {
   public void shouldFailForTheUnknownType() {
 
     final String unknownSchemaType = "bunch-of-monkeys";
-    manager.register(subjectName, unknownSchemaType, simpleSchema);
+    manager.parseSchema(unknownSchemaType, simpleSchema);
   }
 }
