@@ -3,6 +3,7 @@ package com.purbon.kafka.topology.schemas;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.purbon.kafka.topology.schemas.SchemaRegistryManager.SchemaRegistryManagerException;
+import io.confluent.kafka.schemaregistry.CompatibilityLevel;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.SchemaProvider;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
@@ -84,8 +85,8 @@ public class SchemaRegistryManagerTest {
     final int schemaId = manager.register(subjectName, parsedSchema);
     assertThat(schemaId).isEqualTo(1);
 
-    String compLevel = manager.setCompatibility(subjectName, "FORWARD");
-    assertThat(compLevel).isEqualTo("FORWARD");
+    CompatibilityLevel compLevel = manager.setCompatibility(subjectName, CompatibilityLevel.FORWARD);
+    assertThat(compLevel).isEqualTo(CompatibilityLevel.FORWARD);
     assertThat(client.getCompatibility(subjectName)).isEqualTo("FORWARD");
   }
 
@@ -135,7 +136,7 @@ public class SchemaRegistryManagerTest {
         Paths.get(getClass().getClassLoader().getResource("schemas/test.avsc").toURI());
     ParsedSchema parsedSchema = manager.readSchemaFile(AvroSchema.TYPE, schemaFilePath);
     assertThat(manager.register(subjectName, parsedSchema)).isEqualTo(1);
-    manager.setCompatibility(subjectName, "FORWARD");
+    manager.setCompatibility(subjectName, CompatibilityLevel.FORWARD);
     assertThat(client.getCompatibility(subjectName)).isEqualTo("FORWARD");
 
     Path updatedSchemaFilePath =

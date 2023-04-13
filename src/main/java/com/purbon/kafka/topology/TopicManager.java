@@ -88,7 +88,7 @@ public class TopicManager implements ExecutionPlanUpdater {
         .entrySet()
         .stream()
         .flatMap(topicEntry -> Stream.ofNullable(
-            RegisterSchemaAction.createIfHasChanged(
+            RegisterSchemaAction.createIfHasChanges(
                 schemaRegistryManager,
                 topicEntry.getValue(),
                 topicEntry.getKey()

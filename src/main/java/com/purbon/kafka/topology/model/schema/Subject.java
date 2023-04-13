@@ -2,6 +2,7 @@ package com.purbon.kafka.topology.model.schema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.purbon.kafka.topology.model.Topic;
+import io.confluent.kafka.schemaregistry.CompatibilityLevel;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -10,7 +11,7 @@ public class Subject {
 
   private final Optional<String> schemaFile;
   private final Optional<String> recordType;
-  private final Optional<String> optionalCompatibility;
+  private final Optional<CompatibilityLevel> optionalCompatibility;
   private final Optional<String> optionalFormat;
   private final SubjectKind kind;
 
@@ -42,7 +43,13 @@ public class Subject {
     this.optionalCompatibility = optionalCompatibility
         .map(JsonNode::asText)
         .map(String::trim)
-        .filter(Predicate.not(String::isEmpty));
+        .filter(Predicate.not(String::isEmpty))
+        .map(compatibility -> Optional
+            .ofNullable(CompatibilityLevel.forName(compatibility))
+            .orElseThrow(() -> new RuntimeException(
+                "Invalid CompatibilityLevel [" + compatibility + "]"
+            ))
+        );
     this.optionalFormat = optionalFormat
         .map(JsonNode::asText)
         .map(String::trim)
@@ -76,18 +83,18 @@ public class Subject {
     return optionalFormat.orElse(AvroSchema.TYPE);
   }
 
-  public Optional<String> getOptionalCompatibility() {
+  public Optional<CompatibilityLevel> getOptionalCompatibility() {
     return optionalCompatibility;
   }
 
   public String buildSubjectName(Topic topic) {
     switch (topic.getSubjectNameStrategy()) {
       case TOPIC_NAME_STRATEGY:
-        return topic.toString() + "-" + kind.label;
+        return topic + "-" + kind.label;
       case RECORD_NAME_STRATEGY:
         return recordTypeAsString();
       case TOPIC_RECORD_NAME_STRATEGY:
-        return topic.toString() + "-" + recordTypeAsString();
+        return topic + "-" + recordTypeAsString();
       default:
         return "";
     }

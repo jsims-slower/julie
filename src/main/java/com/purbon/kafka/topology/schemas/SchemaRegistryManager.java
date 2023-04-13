@@ -1,5 +1,6 @@
 package com.purbon.kafka.topology.schemas;
 
+import io.confluent.kafka.schemaregistry.CompatibilityLevel;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
@@ -9,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.function.Predicate;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
@@ -99,24 +102,36 @@ public class SchemaRegistryManager {
   //  }
   //}
 
-  public String setCompatibility(String subject, String compatibility) {
+  public CompatibilityLevel setCompatibility(String subject, CompatibilityLevel compatibility) {
     try {
-      return schemaRegistryClient.updateCompatibility(subject, compatibility);
+      return Optional
+          .ofNullable(schemaRegistryClient.updateCompatibility(subject, compatibility.name()))
+          .map(String::trim)
+          .filter(Predicate.not(String::isEmpty))
+          .map(String::toUpperCase)
+          .map(CompatibilityLevel::valueOf)
+          .orElse(null);
     } catch (Exception e) {
       final String msg =
           String.format(
               "Failed to register the schema compatibility mode '%s' for subject '%s'",
-              compatibility, subject);
+              compatibility.name(), subject);
       throw new SchemaRegistryManagerException(msg, e);
     }
   }
 
-  public String getCompatibility(String subject) {
+  public CompatibilityLevel getCompatibility(String subject) {
     try {
-      return schemaRegistryClient.getCompatibility(subject);
+      return Optional
+          .ofNullable(schemaRegistryClient.getCompatibility(subject))
+          .map(String::trim)
+          .filter(Predicate.not(String::isEmpty))
+          .map(String::toUpperCase)
+          .map(CompatibilityLevel::valueOf)
+          .orElse(null);
     } catch (Exception ex) {
       throw new SchemaRegistryManagerException(String.format(
-          "Failed to get schema compatibility mode for subject '%s'", ex));
+          "Failed to get schema compatibility mode for subject '%s'", subject), ex);
     }
   }
 
@@ -135,8 +150,10 @@ public class SchemaRegistryManager {
   public ParsedSchema readSchemaFile(String schemaType, Path schemaPath) {
     final String schemaString;
     try {
-      log.debug("Reading schema from schema file {}", schemaPath);
-      schemaString = Files.readString(schemaPath, StandardCharsets.UTF_8);
+      log.debug("Reading schema from schema path {}", schemaPath);
+      schemaString = (schemaPath != null)
+          ? Files.readString(schemaPath, StandardCharsets.UTF_8)
+          : null;
     } catch (Exception ex) {
       throw new SchemaRegistryManagerException("Failed to read schema file " + schemaPath, ex);
     }
@@ -145,22 +162,29 @@ public class SchemaRegistryManager {
   }
 
   public ParsedSchema parseSchema(String schemaType, String schemaString) {
+    Optional<String> schemaStringOpt =
+        Optional
+            .ofNullable(schemaString)
+            .map(String::trim)
+            .filter(Predicate.not(String::isEmpty));
+
     try {
       log.debug(
           "Parsing schema of type [{}] length [{}]",
           schemaType,
-          schemaString.length()
+          schemaStringOpt.map(String::length).orElse(-1)
       );
-      return schemaRegistryClient
-          .parseSchema(
+
+      return schemaStringOpt
+          .flatMap(schemaString_ -> schemaRegistryClient.parseSchema(
               schemaType,
-              schemaString,
+              schemaString_,
               Collections.emptyList()
-          )
+          ))
           .orElseThrow(() -> new SchemaRegistryManagerException(String.format(
               "Failed to parse schema of type [%s] length [%d]",
               schemaType,
-              schemaString.length()
+              schemaStringOpt.map(String::length).orElse(-1)
           )));
     } catch (SchemaRegistryManagerException ex) {
       throw ex;
@@ -169,7 +193,7 @@ public class SchemaRegistryManager {
           String.format(
               "Failed to parse schema of type [%s] length [%d]",
               schemaType,
-              schemaString.length()
+              schemaStringOpt.map(String::length).orElse(-1)
           ),
           ex
       );

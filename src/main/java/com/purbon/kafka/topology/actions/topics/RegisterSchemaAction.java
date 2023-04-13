@@ -2,60 +2,47 @@ package com.purbon.kafka.topology.actions.topics;
 
 import com.purbon.kafka.topology.actions.BaseAction;
 import com.purbon.kafka.topology.model.Topic;
-import com.purbon.kafka.topology.model.schema.Subject;
 import com.purbon.kafka.topology.model.schema.TopicSchemas;
 import com.purbon.kafka.topology.schemas.SchemaRegistryManager;
-import io.confluent.kafka.schemaregistry.ParsedSchema;
+import lombok.extern.log4j.Log4j2;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class RegisterSchemaAction extends BaseAction {
 
   private final Topic topic;
   private final String fullTopicName;
-  private final SchemaRegistryManager schemaRegistryManager;
   private final List<SchemaChange> schemaChanges;
 
-  @RequiredArgsConstructor
-  private static final class SchemaChange {
-    public final Subject subject;
-    public final String subjectName;
-    public final Integer schemaId;
-    public final ParsedSchema parsedSchema;
-    public final String oldCompatibility;
-  }
-
-  public static RegisterSchemaAction createIfHasChanged(SchemaRegistryManager schemaRegistryManager,
+  public static RegisterSchemaAction createIfHasChanges(SchemaRegistryManager schemaRegistryManager,
                                                         Topic topic,
                                                         String fullTopicName) {
     List<SchemaChange> schemaChanges = new LinkedList<>();
     for (TopicSchemas schema : topic.getSchemas()) {
-      Optional
-          .ofNullable(checkSchemaChanged(schemaRegistryManager, topic, schema.getKeySubject()))
-          .ifPresent(schemaChanges::add);
-      Optional
-          .ofNullable(checkSchemaChanged(schemaRegistryManager, topic, schema.getValueSubject()))
-          .ifPresent(schemaChanges::add);
+      Stream
+          .of(schema.getKeySubject(), schema.getValueSubject())
+          .filter(Objects::nonNull)
+          .map(subject -> SchemaChange.createIfHasChanges(
+              schemaRegistryManager,
+              subject,
+              subject.buildSubjectName(topic)
+          ))
+          .filter(Objects::nonNull)
+          .forEach(schemaChanges::add);
     }
     return schemaChanges.isEmpty()
         ? null
-        : new RegisterSchemaAction(schemaRegistryManager, topic, fullTopicName, schemaChanges);
+        : new RegisterSchemaAction(topic, fullTopicName, schemaChanges);
   }
 
-  public RegisterSchemaAction(SchemaRegistryManager schemaRegistryManager,
-                              Topic topic,
+  public RegisterSchemaAction(Topic topic,
                               String fullTopicName,
                               List<SchemaChange> schemaChanges) {
     this.topic = topic;
     this.fullTopicName = fullTopicName;
-    this.schemaRegistryManager = schemaRegistryManager;
     this.schemaChanges = schemaChanges;
   }
 
@@ -66,24 +53,7 @@ public class RegisterSchemaAction extends BaseAction {
   @Override
   public void run() {
     log.debug(String.format("Register schemas for topic %s", fullTopicName));
-
-    for (SchemaChange schemaChange : schemaChanges) {
-      registerSchema(schemaChange);
-      setCompatibility(schemaChange);
-    }
-  }
-
-  private void registerSchema(SchemaChange schemaChange) {
-    schemaRegistryManager.register(schemaChange.subjectName, schemaChange.parsedSchema);
-  }
-
-  private void setCompatibility(SchemaChange schemaChange) {
-    schemaChange
-        .subject
-        .getOptionalCompatibility()
-        .ifPresent(compatibility ->
-            schemaRegistryManager.setCompatibility(schemaChange.subjectName, compatibility)
-        );
+    schemaChanges.forEach(SchemaChange::applyChanges);
   }
 
   @Override
@@ -92,10 +62,10 @@ public class RegisterSchemaAction extends BaseAction {
     Map<String, ?> schemas =
         schemaChanges
             .stream()
-            .sorted(Comparator.comparing(schemaChange -> schemaChange.subjectName))
+            .sorted(SchemaChange.comparator)
             .collect(Collectors.toMap(
-                schemaChange -> schemaChange.subjectName,
-                this::toProps,
+                SchemaChange::getSubjectName,
+                SchemaChange::toProps,
                 (v1, v2) -> {
                   throw new RuntimeException(String.format("Duplicate key for values %s and %s", v1, v2));
                 },
@@ -120,15 +90,15 @@ public class RegisterSchemaAction extends BaseAction {
           Map<String, ?> schemas = Stream
               .concat(
                   schemaChanges.stream().filter(schemaChange ->
-                      schemaChange.subjectName.equalsIgnoreCase(keySubjectName)
+                      schemaChange.getSubjectName().equalsIgnoreCase(keySubjectName)
                   ),
                   schemaChanges.stream().filter(schemaChange ->
-                      schemaChange.subjectName.equalsIgnoreCase(valueSubjectName)
+                      schemaChange.getSubjectName().equalsIgnoreCase(valueSubjectName)
                   )
               )
               .collect(Collectors.toMap(
-                  schemaChange -> schemaChange.subjectName,
-                  this::toProps,
+                  SchemaChange::getSubjectName,
+                  SchemaChange::toProps,
                   (v1, v2) -> {
                     throw new RuntimeException(String.format("Duplicate key for values %s and %s", v1, v2));
                   },
@@ -152,65 +122,5 @@ public class RegisterSchemaAction extends BaseAction {
           return map;
         })
         .collect(Collectors.toList());
-  }
-
-  private Map<String, String> toProps(SchemaChange schemaChange) {
-    Map<String, String> subjectInfo = new LinkedHashMap<>();
-    subjectInfo.put(
-        String.format("[%s]file", schemaChange.schemaId == null ? "*" : ""),
-        schemaChange.subject.getOptionalSchemaFile().orElse("")
-    );
-    subjectInfo.put("format", schemaChange.subject.getFormat());
-    subjectInfo.put(
-        String.format(
-            "[%s]compatibility",
-            hasCompatibilityChanged(schemaChange.subject, schemaChange.oldCompatibility) ? "*" : ""
-        ),
-        schemaChange.subject
-            .getOptionalCompatibility()
-            .orElse("")
-    );
-    return subjectInfo;
-  }
-
-
-  private static SchemaChange checkSchemaChanged(SchemaRegistryManager schemaRegistryManager,
-                                                 Topic topic,
-                                                 Subject subject) {
-    // TODO: How to handle schema deletes
-
-    // If the schema is already registered, only check compatibility
-    ParsedSchema parsedSchema = subject
-        .getOptionalSchemaFile()
-        .map(schemaRegistryManager::schemaFilePath)
-        .map(schemaPath ->
-            schemaRegistryManager.readSchemaFile(subject.getFormat(), schemaPath)
-        )
-        .orElse(null);
-
-    if (parsedSchema == null)
-      return null;
-
-    String subjectName = subject.buildSubjectName(topic);
-
-    Integer schemaId = schemaRegistryManager.getId(subjectName, parsedSchema);
-
-    String oldCompatibility =
-        Optional
-            .ofNullable(schemaRegistryManager.getCompatibility(subjectName))
-            .map(String::trim)
-            .filter(Predicate.not(String::isEmpty))
-            .orElse(null);
-
-    return (schemaId == null || hasCompatibilityChanged(subject, oldCompatibility))
-        ? new SchemaChange(subject, subjectName, schemaId, parsedSchema, oldCompatibility)
-        : null;
-  }
-
-  private static boolean hasCompatibilityChanged(Subject subject, String oldCompatibility) {
-    return subject
-        .getOptionalCompatibility()
-        .filter(compatibility -> !compatibility.equalsIgnoreCase(oldCompatibility))
-        .isPresent();
   }
 }
