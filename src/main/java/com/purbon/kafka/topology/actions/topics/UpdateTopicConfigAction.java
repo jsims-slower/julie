@@ -3,37 +3,29 @@ package com.purbon.kafka.topology.actions.topics;
 import com.purbon.kafka.topology.actions.BaseAction;
 import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
 import com.purbon.kafka.topology.model.Topic;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Log4j2
+@RequiredArgsConstructor
 public class UpdateTopicConfigAction extends BaseAction {
 
-  private static final Logger LOGGER = LogManager.getLogger(UpdateTopicConfigAction.class);
-
-  private final TopicConfigUpdatePlan topicConfigUpdatePlan;
   private final TopologyBuilderAdminClient adminClient;
-
-  public UpdateTopicConfigAction(
-      TopologyBuilderAdminClient adminClient, TopicConfigUpdatePlan topicConfigUpdatePlan) {
-    this.topicConfigUpdatePlan = topicConfigUpdatePlan;
-    this.adminClient = adminClient;
-  }
+  private final TopicConfigUpdatePlan topicConfigUpdatePlan;
 
   @Override
   public void run() throws IOException {
     final Topic topic = topicConfigUpdatePlan.getTopic();
     final String fullTopicName = topicConfigUpdatePlan.getFullTopicName();
 
-    LOGGER.debug(String.format("Update config for topic %s", fullTopicName));
+    log.debug(String.format("Update config for topic %s", fullTopicName));
     if (topicConfigUpdatePlan.isUpdatePartitionCount()) {
-      LOGGER.debug(String.format("Update partition count of topic %s", fullTopicName));
+      log.debug(String.format("Update partition count of topic %s", fullTopicName));
       adminClient.updatePartitionCount(topic, fullTopicName);
     }
 
@@ -47,7 +39,7 @@ public class UpdateTopicConfigAction extends BaseAction {
       changes.put("NewConfigs", sortMap(topicConfigUpdatePlan.getNewConfigValues()));
     }
     if (topicConfigUpdatePlan.hasUpdatedConfigs()) {
-      changes.put("UpdatedConfigs", sortMap(topicConfigUpdatePlan.getUpdatedConfigValues()));
+      changes.put("UpdatedConfigs", formatUpdated(topicConfigUpdatePlan.getUpdatedConfigValues()));
     }
     if (topicConfigUpdatePlan.hasDeletedConfigs()) {
       changes.put("DeletedConfigs", sortMap(topicConfigUpdatePlan.getDeletedConfigValues()));
@@ -75,5 +67,25 @@ public class UpdateTopicConfigAction extends BaseAction {
             "rn://update.topic.config/%s/%s",
             getClass().getName(), topicConfigUpdatePlan.getTopic().getName()));
     return Collections.singletonList(map);
+  }
+
+  private <T> Map<String, ?> formatUpdated(Map<String, Pair<T, T>> updatedMap) {
+    return updatedMap
+        .entrySet()
+        .stream()
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            entry -> String.format("%s (%s)", entry.getValue().getRight(), entry.getValue().getLeft()),
+            //entry -> sortMap(Map.of(
+            //    "new", entry.getValue().getRight(),
+            //    "old", entry.getValue().getLeft()
+            //)),
+            (v1, v2) -> {
+              throw new RuntimeException(String.format(
+                  "Collectors.toMap had a conflict [%s] vs [%s]",
+                  v1, v2));
+            },
+            TreeMap::new
+        ));
   }
 }

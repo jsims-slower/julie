@@ -1,58 +1,44 @@
 package com.purbon.kafka.topology.actions.topics;
 
 import com.purbon.kafka.topology.model.Topic;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.kafka.clients.admin.Config;
+import org.apache.kafka.clients.admin.ConfigEntry;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import org.apache.kafka.clients.admin.Config;
-import org.apache.kafka.clients.admin.ConfigEntry;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Getter
+@Setter
+@Log4j2
+@RequiredArgsConstructor
 public class TopicConfigUpdatePlan {
-
-  private static final Logger LOGGER = LogManager.getLogger(TopicConfigUpdatePlan.class);
 
   private final Topic topic;
   private boolean updatePartitionCount;
-  private Map<String, String> newConfigValues = new HashMap<>();
-  private Map<String, String> updatedConfigValues = new HashMap<>();
-  private Map<String, String> deletedConfigValues = new HashMap<>();
-
-  public TopicConfigUpdatePlan(Topic topic) {
-    this.topic = topic;
-  }
+  private final Map<String, String> newConfigValues = new HashMap<>();
+  private final Map<String, Pair<String, String>> updatedConfigValues = new HashMap<>();
+  private final Map<String, String> deletedConfigValues = new HashMap<>();
 
   public void addNewConfig(String name, String value) {
     newConfigValues.put(name, value);
   }
 
-  public void addConfigToUpdate(String name, String value) {
-    updatedConfigValues.put(name, value);
+  public void addConfigToUpdate(String name, String currentValue, String newValue) {
+    updatedConfigValues.put(name, Pair.of(currentValue, newValue));
   }
 
   public void addConfigToDelete(String name, String value) {
     deletedConfigValues.put(name, value);
   }
 
-  public Topic getTopic() {
-    return topic;
-  }
-
   public String getFullTopicName() {
     return topic.toString();
-  }
-
-  public Map<String, String> getNewConfigValues() {
-    return newConfigValues;
-  }
-
-  public Map<String, String> getUpdatedConfigValues() {
-    return updatedConfigValues;
-  }
-
-  public Map<String, String> getDeletedConfigValues() {
-    return deletedConfigValues;
   }
 
   public boolean hasNewConfigs() {
@@ -71,14 +57,6 @@ public class TopicConfigUpdatePlan {
     return topic.partitionsCount();
   }
 
-  public boolean isUpdatePartitionCount() {
-    return updatePartitionCount;
-  }
-
-  public void setUpdatePartitionCount(boolean updatePartitionCount) {
-    this.updatePartitionCount = updatePartitionCount;
-  }
-
   public boolean hasConfigChanges() {
     return updatePartitionCount || hasNewConfigs() || hasUpdatedConfigs() || hasDeletedConfigs();
   }
@@ -88,17 +66,17 @@ public class TopicConfigUpdatePlan {
     topicConfigs.forEach(
         (configKey, configValue) -> {
           ConfigEntry currentConfigEntry = currentKafkaConfigs.get(configKey);
-          LOGGER.debug(
+          log.debug(
               String.format(
                   "addNewOrUpdatedConfigs compare: currentConfigEntryValue = %s and configValue = %s",
                   currentConfigEntry.value(), configValue));
           if (!currentConfigEntry.value().equals(configValue)) {
-            LOGGER.debug(
+            log.debug(
                 String.format(
                     "addNewOrUpdatedConfigs detected as different: currentConfigEntryValue = %s and configValue = %s",
                     currentConfigEntry.value(), configValue));
             if (isDynamicTopicConfig(currentConfigEntry)) {
-              addConfigToUpdate(configKey, configValue);
+              addConfigToUpdate(configKey, currentConfigEntry.value(), configValue);
             } else {
               addNewConfig(configKey, configValue);
             }

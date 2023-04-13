@@ -4,15 +4,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.purbon.kafka.topology.model.Topic;
 import io.confluent.kafka.schemaregistry.CompatibilityLevel;
 import io.confluent.kafka.schemaregistry.avro.AvroSchema;
+import lombok.Getter;
+
 import java.util.Optional;
 import java.util.function.Predicate;
 
 public class Subject {
 
-  private final Optional<String> schemaFile;
+  @Getter
+  private final Optional<String> optionalSchemaFile;
   private final Optional<String> recordType;
+  @Getter
   private final Optional<CompatibilityLevel> optionalCompatibility;
-  private final Optional<String> optionalFormat;
+  @Getter
+  private final String format;
   private final SubjectKind kind;
 
   public enum SubjectKind {
@@ -32,7 +37,7 @@ public class Subject {
       Optional<JsonNode> optionalFormat,
       Optional<JsonNode> optionalCompatibility,
       SubjectKind kind) {
-    this.schemaFile = schemaFileJsonNode
+    this.optionalSchemaFile = schemaFileJsonNode
         .map(JsonNode::asText)
         .map(String::trim)
         .filter(Predicate.not(String::isEmpty));
@@ -50,15 +55,16 @@ public class Subject {
                 "Invalid CompatibilityLevel [" + compatibility + "]"
             ))
         );
-    this.optionalFormat = optionalFormat
+    this.format = optionalFormat
         .map(JsonNode::asText)
         .map(String::trim)
-        .filter(Predicate.not(String::isEmpty));
+        .filter(Predicate.not(String::isEmpty))
+        .orElse(AvroSchema.TYPE);
     this.kind = kind;
   }
 
   public Subject(String schemaFile, String recordType, SubjectKind kind) {
-    this.schemaFile = Optional
+    this.optionalSchemaFile = Optional
         .ofNullable(schemaFile)
         .map(String::trim)
         .filter(Predicate.not(String::isEmpty));
@@ -67,24 +73,12 @@ public class Subject {
         .map(String::trim)
         .filter(Predicate.not(String::isEmpty));
     this.optionalCompatibility = Optional.empty();
-    this.optionalFormat = Optional.empty();
+    this.format = AvroSchema.TYPE;
     this.kind = kind;
   }
 
-  public Optional<String> getOptionalSchemaFile() {
-    return schemaFile;
-  }
-
   private String recordTypeAsString() {
-    return recordType.orElseThrow(() -> new RuntimeException("Missing record type for " + schemaFile));
-  }
-
-  public String getFormat() {
-    return optionalFormat.orElse(AvroSchema.TYPE);
-  }
-
-  public Optional<CompatibilityLevel> getOptionalCompatibility() {
-    return optionalCompatibility;
+    return recordType.orElseThrow(() -> new RuntimeException("Missing record type for " + optionalSchemaFile));
   }
 
   public String buildSubjectName(Topic topic) {

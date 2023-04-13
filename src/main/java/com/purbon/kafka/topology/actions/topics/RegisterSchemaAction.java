@@ -4,6 +4,7 @@ import com.purbon.kafka.topology.actions.BaseAction;
 import com.purbon.kafka.topology.model.Topic;
 import com.purbon.kafka.topology.model.schema.TopicSchemas;
 import com.purbon.kafka.topology.schemas.SchemaRegistryManager;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.*;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Log4j2
+@RequiredArgsConstructor
 public class RegisterSchemaAction extends BaseAction {
 
   private final Topic topic;
@@ -36,18 +38,6 @@ public class RegisterSchemaAction extends BaseAction {
     return schemaChanges.isEmpty()
         ? null
         : new RegisterSchemaAction(topic, fullTopicName, schemaChanges);
-  }
-
-  public RegisterSchemaAction(Topic topic,
-                              String fullTopicName,
-                              List<SchemaChange> schemaChanges) {
-    this.topic = topic;
-    this.fullTopicName = fullTopicName;
-    this.schemaChanges = schemaChanges;
-  }
-
-  public String getTopic() {
-    return fullTopicName;
   }
 
   @Override

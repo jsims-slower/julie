@@ -3,30 +3,11 @@ package com.purbon.kafka.topology.api.adminclient;
 import com.purbon.kafka.topology.actions.topics.TopicConfigUpdatePlan;
 import com.purbon.kafka.topology.model.Topic;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AlterConfigOp;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.admin.AlterConfigOp.OpType;
-import org.apache.kafka.clients.admin.Config;
-import org.apache.kafka.clients.admin.ConfigEntry;
-import org.apache.kafka.clients.admin.ListTopicsOptions;
-import org.apache.kafka.clients.admin.NewPartitions;
-import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.admin.TopicDescription;
-import org.apache.kafka.common.acl.AccessControlEntryFilter;
-import org.apache.kafka.common.acl.AclBinding;
-import org.apache.kafka.common.acl.AclBindingFilter;
-import org.apache.kafka.common.acl.AclOperation;
-import org.apache.kafka.common.acl.AclPermissionType;
+import org.apache.kafka.common.acl.*;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.config.ConfigResource.Type;
 import org.apache.kafka.common.errors.InvalidConfigurationException;
@@ -34,25 +15,24 @@ import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourcePatternFilter;
 import org.apache.kafka.common.resource.ResourceType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+
+@Log4j2
+@RequiredArgsConstructor
 public class TopologyBuilderAdminClient {
 
-  private static final Logger LOGGER = LogManager.getLogger(TopologyBuilderAdminClient.class);
-
   private final AdminClient adminClient;
-
-  public TopologyBuilderAdminClient(AdminClient adminClient) {
-    this.adminClient = adminClient;
-  }
 
   public Set<String> listTopics(ListTopicsOptions options) throws IOException {
     Set<String> listOfTopics;
     try {
       listOfTopics = adminClient.listTopics(options).names().get();
     } catch (InterruptedException | ExecutionException e) {
-      LOGGER.error(e);
+      log.error(e);
       throw new IOException(e);
     }
     return listOfTopics;
@@ -90,9 +70,9 @@ public class TopologyBuilderAdminClient {
     configUpdatePlan
         .getUpdatedConfigValues()
         .forEach(
-            (configKey, configValue) ->
+            (configKey, configValuePair) ->
                 configChanges.add(
-                    new AlterConfigOp(new ConfigEntry(configKey, configValue), OpType.SET)));
+                    new AlterConfigOp(new ConfigEntry(configKey, configValuePair.getRight()), OpType.SET)));
 
     configUpdatePlan
         .getDeletedConfigValues()
@@ -106,7 +86,7 @@ public class TopologyBuilderAdminClient {
     try {
       adminClient.incrementalAlterConfigs(configs).all().get();
     } catch (InterruptedException | ExecutionException ex) {
-      LOGGER.error("Failed to update configs for topic " + configUpdatePlan.getFullTopicName(), ex);
+      log.error("Failed to update configs for topic " + configUpdatePlan.getFullTopicName(), ex);
       throw new RuntimeException(ex);
     }
   }
@@ -117,7 +97,7 @@ public class TopologyBuilderAdminClient {
           adminClient.describeTopics(Collections.singletonList(topic)).all().get();
       return results.get(topic).partitions().size();
     } catch (InterruptedException | ExecutionException e) {
-      LOGGER.error(e);
+      log.error(e);
       throw new IOException(e);
     }
   }
@@ -128,7 +108,7 @@ public class TopologyBuilderAdminClient {
     try {
       adminClient.createPartitions(map).all().get();
     } catch (InterruptedException | ExecutionException e) {
-      LOGGER.error(e);
+      log.error(e);
       throw new IOException(e);
     }
   }
@@ -142,7 +122,7 @@ public class TopologyBuilderAdminClient {
   public void clearAcls(TopologyAclBinding aclBinding) throws IOException {
     Collection<AclBindingFilter> filters = new ArrayList<>();
 
-    LOGGER.debug("clearAcl = " + aclBinding);
+    log.debug("clearAcl = {}", aclBinding);
     ResourcePatternFilter resourceFilter =
         new ResourcePatternFilter(
             ResourceType.valueOf(aclBinding.getResourceType()),
@@ -165,7 +145,7 @@ public class TopologyBuilderAdminClient {
     try {
       adminClient.deleteAcls(filters).all().get();
     } catch (ExecutionException | InterruptedException e) {
-      LOGGER.error(e);
+      log.error(e);
       throw new IOException(e);
     }
   }
@@ -178,7 +158,7 @@ public class TopologyBuilderAdminClient {
     try {
       configs = adminClient.describeConfigs(resources).all().get();
     } catch (InterruptedException | ExecutionException ex) {
-      LOGGER.error(ex);
+      log.error(ex);
       throw new RuntimeException(ex);
     }
 
@@ -193,10 +173,10 @@ public class TopologyBuilderAdminClient {
       createAllTopics(Collections.singleton(newTopic));
     } catch (ExecutionException | InterruptedException e) {
       if (e.getCause() instanceof TopicExistsException) {
-        LOGGER.info(e.getMessage());
+        log.info(e.getMessage());
         return;
       }
-      LOGGER.error(e);
+      log.error(e);
       throw new IOException(e);
     }
   }
@@ -215,7 +195,7 @@ public class TopologyBuilderAdminClient {
     try {
       adminClient.deleteTopics(topics).all().get();
     } catch (ExecutionException | InterruptedException e) {
-      LOGGER.error(e);
+      log.error(e);
       throw new IOException(e);
     }
   }
@@ -228,10 +208,7 @@ public class TopologyBuilderAdminClient {
       list.forEach(
           aclBinding -> {
             String name = aclBinding.pattern().name();
-            if (acls.get(name) == null) {
-              acls.put(name, new ArrayList<>());
-            }
-            Collection<AclBinding> updatedList = acls.get(name);
+            Collection<AclBinding> updatedList = acls.computeIfAbsent(name, k -> new ArrayList<>());
             updatedList.add(aclBinding);
             acls.put(name, updatedList);
           });
@@ -244,13 +221,13 @@ public class TopologyBuilderAdminClient {
   public void createAcls(Collection<AclBinding> acls) {
     try {
       String aclsDump = acls.stream().map(AclBinding::toString).collect(Collectors.joining(", "));
-      LOGGER.debug("createAcls: " + aclsDump);
+      log.debug("createAcls: {}", aclsDump);
       adminClient.createAcls(acls).all().get();
     } catch (InvalidConfigurationException ex) {
-      LOGGER.error(ex);
+      log.error(ex);
       throw ex;
     } catch (ExecutionException | InterruptedException e) {
-      LOGGER.error(e);
+      log.error(e);
     }
   }
 

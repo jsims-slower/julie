@@ -167,7 +167,7 @@ public class TopologySerdesTest {
     project.setTopics(Arrays.asList(topic, topicBar));
 
     Project project2 = new ProjectImpl("bar");
-    project2.setTopics(Arrays.asList(topicBar));
+    project2.setTopics(Collections.singletonList(topicBar));
 
     topology.setProjects(Arrays.asList(project, project2));
 
@@ -430,7 +430,7 @@ public class TopologySerdesTest {
         DEVELOPER_READ,
         true);
     Connector connector = myProject.getConnectors().get(0);
-    assertEquals(true, connector.getConnectors().isPresent());
+    assertThat(connector.getConnectors()).isPresent();
     assertEquals("jdbc-sync", connector.getConnectors().get().get(0));
     assertEquals("ibmmq-source", connector.getConnectors().get().get(1));
 
@@ -438,7 +438,7 @@ public class TopologySerdesTest {
         topology.getPlatform().getSchemaRegistry().getRbac();
     assertTrue(rbacOptional.isPresent());
 
-    Set<String> keys = Arrays.asList("Operator").stream().collect(Collectors.toSet());
+    Set<String> keys = Collections.singleton("Operator");
     assertEquals(keys, rbacOptional.get().keySet());
     assertEquals(2, rbacOptional.get().get("Operator").size());
 
@@ -447,7 +447,7 @@ public class TopologySerdesTest {
     assertTrue(kafkaRbacOptional.isPresent());
 
     Set<String> kafkaKeys =
-        Arrays.asList("SecurityAdmin", "ClusterAdmin").stream().collect(Collectors.toSet());
+        new HashSet<>(Arrays.asList("SecurityAdmin", "ClusterAdmin"));
     assertEquals(kafkaKeys, kafkaRbacOptional.get().keySet());
     assertEquals(1, kafkaRbacOptional.get().get("SecurityAdmin").size());
   }
@@ -813,7 +813,7 @@ public class TopologySerdesTest {
 
     topics = new HashMap<>();
     topics.put("read", Arrays.asList("topic2", "topic4"));
-    topics.put("write", Arrays.asList("topic5"));
+    topics.put("write", Collections.singletonList("topic5"));
     streams.add(new KStream("app4", topics));
 
     return streams;
