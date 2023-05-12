@@ -1,7 +1,7 @@
 package com.purbon.kafka.topology.utils;
 
 import static com.purbon.kafka.topology.CommandLineInterface.BROKERS_OPTION;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 

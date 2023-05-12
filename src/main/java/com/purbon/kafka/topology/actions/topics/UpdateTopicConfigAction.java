@@ -3,15 +3,13 @@ package com.purbon.kafka.topology.actions.topics;
 import com.purbon.kafka.topology.actions.BaseAction;
 import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
 import com.purbon.kafka.topology.model.Topic;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 
-@Log4j2
+@Slf4j
 @RequiredArgsConstructor
 public class UpdateTopicConfigAction extends BaseAction {
 
@@ -23,9 +21,9 @@ public class UpdateTopicConfigAction extends BaseAction {
     final Topic topic = topicConfigUpdatePlan.getTopic();
     final String fullTopicName = topicConfigUpdatePlan.getFullTopicName();
 
-    log.debug(String.format("Update config for topic %s", fullTopicName));
+    log.debug("Update config for topic {}", fullTopicName);
     if (topicConfigUpdatePlan.isUpdatePartitionCount()) {
-      log.debug(String.format("Update partition count of topic %s", fullTopicName));
+      log.debug("Update partition count of topic {}", fullTopicName);
       adminClient.updatePartitionCount(topic, fullTopicName);
     }
 
@@ -70,22 +68,12 @@ public class UpdateTopicConfigAction extends BaseAction {
   }
 
   private <T> Map<String, ?> formatUpdated(Map<String, Pair<T, T>> updatedMap) {
-    return updatedMap
-        .entrySet()
-        .stream()
-        .collect(Collectors.toMap(
-            Map.Entry::getKey,
-            entry -> String.format("%s (%s)", entry.getValue().getRight(), entry.getValue().getLeft()),
-            //entry -> sortMap(Map.of(
-            //    "new", entry.getValue().getRight(),
-            //    "old", entry.getValue().getLeft()
-            //)),
-            (v1, v2) -> {
-              throw new RuntimeException(String.format(
-                  "Collectors.toMap had a conflict [%s] vs [%s]",
-                  v1, v2));
-            },
-            TreeMap::new
-        ));
+    return updatedMap.entrySet().stream()
+        .collect(
+            toSortedMap(
+                Map.Entry::getKey,
+                entry ->
+                    String.format(
+                        "%s (%s)", entry.getValue().getRight(), entry.getValue().getLeft())));
   }
 }

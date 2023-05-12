@@ -85,7 +85,8 @@ public class SchemaRegistryManagerTest {
     final int schemaId = manager.register(subjectName, parsedSchema);
     assertThat(schemaId).isEqualTo(1);
 
-    CompatibilityLevel compLevel = manager.setCompatibility(subjectName, CompatibilityLevel.FORWARD);
+    CompatibilityLevel compLevel =
+        manager.setCompatibility(subjectName, CompatibilityLevel.FORWARD);
     assertThat(compLevel).isEqualTo(CompatibilityLevel.FORWARD);
     assertThat(client.getCompatibility(subjectName)).isEqualTo("FORWARD");
   }
@@ -99,7 +100,7 @@ public class SchemaRegistryManagerTest {
   @Test
   public void shouldMakePathFromARelativePath() {
     Path expectedPath = Paths.get(rootDir.toString(), "schemas/bar-value.avsc");
-    Path actualPath = manager.schemaFilePath( "schemas/bar-value.avsc");
+    Path actualPath = manager.schemaFilePath("schemas/bar-value.avsc");
     assertThat(actualPath).isEqualTo(expectedPath);
   }
 

@@ -16,18 +16,15 @@ import com.purbon.kafka.topology.model.artefact.KsqlTableArtefact;
 import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import com.purbon.kafka.topology.utils.StreamUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ExecutionPlan {
-
-  private static final Logger LOGGER = LogManager.getLogger(ExecutionPlan.class);
 
   private final List<Action> plan;
   private final PrintStream outputStream;
@@ -40,7 +37,7 @@ public class ExecutionPlan {
   private Set<KsqlStreamArtefact> ksqlStreams;
   private Set<KsqlTableArtefact> ksqlTables;
 
-  private Auditor auditor;
+  private final Auditor auditor;
 
   private ExecutionPlan(
       List<Action> plan,
@@ -95,7 +92,7 @@ public class ExecutionPlan {
       try {
         execute(action, dryRun);
       } catch (IOException e) {
-        LOGGER.error(String.format("Something happen running action %s", action), e);
+        log.error("Something happen running action {}", action, e);
         throw e;
       }
     }
@@ -113,7 +110,7 @@ public class ExecutionPlan {
   }
 
   private void execute(Action action, boolean dryRun) throws IOException {
-    LOGGER.debug(String.format("Execution action %s (dryRun=%s)", action, dryRun));
+    log.debug("Execution action {} (dryRun={})", action, dryRun);
     if (!action.toString().isEmpty()) {
       outputStream.println(action);
     }
@@ -123,7 +120,7 @@ public class ExecutionPlan {
       // TODO: a nicer and more clean version of this might be a cool thing to have, current version
       // is shitty.
       if (action instanceof CreateTopicAction) {
-        topics.add(((CreateTopicAction) action).getTopic());
+        topics.add(((CreateTopicAction) action).getFullTopicName());
       } else if (action instanceof DeleteTopics) {
         List<String> topicsToBeDeleted = ((DeleteTopics) action).getTopicsToBeDeleted();
         topics =

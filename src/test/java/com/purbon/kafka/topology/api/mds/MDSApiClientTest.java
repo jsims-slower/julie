@@ -1,7 +1,7 @@
 package com.purbon.kafka.topology.api.mds;
 
 import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.DEVELOPER_READ;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;

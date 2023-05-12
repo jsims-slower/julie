@@ -3,12 +3,10 @@ package com.purbon.kafka.topology.api.mds;
 import com.purbon.kafka.topology.Configuration;
 import java.io.IOException;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MDSApiClientBuilder {
-
-  private static final Logger LOGGER = LogManager.getLogger(MDSApiClientBuilder.class);
 
   private Configuration config;
 
@@ -26,7 +24,7 @@ public class MDSApiClientBuilder {
     apiClient.setConnectClusterID(config.getKafkaConnectClusterId());
     apiClient.setKSqlClusterID(config.getKsqlDBClusterID());
 
-    LOGGER.debug(String.format("Connecting to an MDS server at %s", mdsServer));
+    log.debug("Connecting to an MDS server at {}", mdsServer);
     return apiClient;
   }
 

@@ -2,12 +2,10 @@ package com.purbon.kafka.topology.roles;
 
 import com.purbon.kafka.topology.Configuration;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ResourceFilter {
-
-  private static final Logger LOGGER = LogManager.getLogger(ResourceFilter.class);
 
   private final List<String> managedServiceAccountPrefixes;
   private final List<String> managedTopicPrefixes;
@@ -90,7 +88,7 @@ public class ResourceFilter {
 
   private boolean matchesPrefix(List<String> prefixes, String item, String type) {
     boolean matches = prefixes.size() == 0 || prefixes.stream().anyMatch(item::startsWith);
-    LOGGER.debug(String.format("%s %s matches %s with %s", type, item, matches, prefixes));
+    log.debug("{} {} matches {} with {}", type, item, matches, prefixes);
     return matches;
   }
 }

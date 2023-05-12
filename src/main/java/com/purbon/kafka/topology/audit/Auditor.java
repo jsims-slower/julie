@@ -5,13 +5,13 @@ import lombok.Getter;
 
 public class Auditor {
 
-  @Getter private Appender appender;
+  @Getter private final Appender appender;
 
   public Auditor(Appender appender) {
     this.appender = appender;
   }
 
   public void log(Action action) {
-    action.refs().forEach(ref -> appender.log(ref));
+    action.refs().forEach(appender::log);
   }
 }

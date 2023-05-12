@@ -3,8 +3,12 @@ package com.purbon.kafka.topology.api.adminclient;
 import com.purbon.kafka.topology.actions.topics.TopicConfigUpdatePlan;
 import com.purbon.kafka.topology.model.Topic;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.admin.AlterConfigOp.OpType;
 import org.apache.kafka.common.acl.*;
@@ -16,12 +20,7 @@ import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourcePatternFilter;
 import org.apache.kafka.common.resource.ResourceType;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-
-@Log4j2
+@Slf4j
 @RequiredArgsConstructor
 public class TopologyBuilderAdminClient {
 
@@ -32,7 +31,7 @@ public class TopologyBuilderAdminClient {
     try {
       listOfTopics = adminClient.listTopics(options).names().get();
     } catch (InterruptedException | ExecutionException e) {
-      log.error(e);
+      log.error("{}", e.getMessage(), e);
       throw new IOException(e);
     }
     return listOfTopics;
@@ -72,7 +71,8 @@ public class TopologyBuilderAdminClient {
         .forEach(
             (configKey, configValuePair) ->
                 configChanges.add(
-                    new AlterConfigOp(new ConfigEntry(configKey, configValuePair.getRight()), OpType.SET)));
+                    new AlterConfigOp(
+                        new ConfigEntry(configKey, configValuePair.getRight()), OpType.SET)));
 
     configUpdatePlan
         .getDeletedConfigValues()
@@ -97,7 +97,7 @@ public class TopologyBuilderAdminClient {
           adminClient.describeTopics(Collections.singletonList(topic)).all().get();
       return results.get(topic).partitions().size();
     } catch (InterruptedException | ExecutionException e) {
-      log.error(e);
+      log.error("{}", e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -108,7 +108,7 @@ public class TopologyBuilderAdminClient {
     try {
       adminClient.createPartitions(map).all().get();
     } catch (InterruptedException | ExecutionException e) {
-      log.error(e);
+      log.error("{}", e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -145,7 +145,7 @@ public class TopologyBuilderAdminClient {
     try {
       adminClient.deleteAcls(filters).all().get();
     } catch (ExecutionException | InterruptedException e) {
-      log.error(e);
+      log.error("{}", e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -154,11 +154,11 @@ public class TopologyBuilderAdminClient {
     ConfigResource resource = new ConfigResource(Type.TOPIC, topic);
     Collection<ConfigResource> resources = Collections.singletonList(resource);
 
-    Map<ConfigResource, Config> configs = null;
+    final Map<ConfigResource, Config> configs;
     try {
       configs = adminClient.describeConfigs(resources).all().get();
     } catch (InterruptedException | ExecutionException ex) {
-      log.error(ex);
+      log.error("{}", ex.getMessage(), ex);
       throw new RuntimeException(ex);
     }
 
@@ -176,7 +176,7 @@ public class TopologyBuilderAdminClient {
         log.info(e.getMessage());
         return;
       }
-      log.error(e);
+      log.error("{}", e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -195,7 +195,7 @@ public class TopologyBuilderAdminClient {
     try {
       adminClient.deleteTopics(topics).all().get();
     } catch (ExecutionException | InterruptedException e) {
-      log.error(e);
+      log.error("{}", e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -224,10 +224,10 @@ public class TopologyBuilderAdminClient {
       log.debug("createAcls: {}", aclsDump);
       adminClient.createAcls(acls).all().get();
     } catch (InvalidConfigurationException ex) {
-      log.error(ex);
+      log.error("{}", ex.getMessage(), ex);
       throw ex;
     } catch (ExecutionException | InterruptedException e) {
-      log.error(e);
+      log.error("{}", e.getMessage(), e);
     }
   }
 

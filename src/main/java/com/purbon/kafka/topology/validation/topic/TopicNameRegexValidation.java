@@ -10,20 +10,16 @@ import com.purbon.kafka.topology.validation.TopicValidation;
 import com.typesafe.config.ConfigException;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Slf4j
 public class TopicNameRegexValidation implements TopicValidation {
 
-  private static final Logger LOGGER = LogManager.getLogger(TopicNameRegexValidation.class);
-
-  private String topicNamePattern;
-  private Configuration config;
+  private final String topicNamePattern;
 
   public TopicNameRegexValidation(Configuration config) throws ConfigurationException {
     this(getTopicNamePatternFromConfig(config));
-    this.config = config;
   }
 
   public TopicNameRegexValidation(String pattern) throws ConfigurationException {
@@ -34,7 +30,7 @@ public class TopicNameRegexValidation implements TopicValidation {
 
   @Override
   public void valid(Topic topic) throws ValidationException {
-    LOGGER.trace(String.format("Applying Topic Name Regex Validation [%s]", topicNamePattern));
+    log.trace("Applying Topic Name Regex Validation [{}]", topicNamePattern);
 
     if (!topic.getName().matches(topicNamePattern)) {
       String msg =

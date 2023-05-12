@@ -8,7 +8,6 @@ import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.DEVELOPER
 import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.RESOURCE_OWNER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.purbon.kafka.topology.exceptions.TopologyParsingException;
 import com.purbon.kafka.topology.model.*;
@@ -119,7 +118,7 @@ public class TopologySerdesTest {
     Topology deserTopology = parser.deserialise(topologyYamlString);
 
     assertEquals(topology.getContext(), deserTopology.getContext());
-    assertEquals(topology.getProjects().size(), deserTopology.getProjects().size());
+    assertThat(topology.getProjects()).hasSameSizeAs(deserTopology.getProjects());
   }
 
   @Test
@@ -205,7 +204,7 @@ public class TopologySerdesTest {
     Topic serdesTopic = serdesProject.getTopics().get(0);
 
     assertEquals(topic.getDataType(), serdesTopic.getDataType());
-    assertEquals(topic.getDataType().get(), serdesTopic.getDataType().get());
+    assertThat(topic.getDataType()).isEqualTo(serdesTopic.getDataType());
 
     Topic serdesTopic2 = serdesProject.getTopics().get(1);
     assertEquals(topic2.getDataType(), serdesTopic2.getDataType());
@@ -271,13 +270,16 @@ public class TopologySerdesTest {
 
     assertThat(topicBar).isPresent();
     assertThat(topicBar.get().getSchemas()).hasSize(1);
-    assertThat(topicBar.get().getSchemas().get(0).getValueSubject().getOptionalSchemaFile()).isNotEmpty();
+    assertThat(topicBar.get().getSchemas().get(0).getValueSubject().getOptionalSchemaFile())
+        .isNotEmpty();
     assertThat(topicBar.get().getSubjectNameStrategy()).isEqualTo(TOPIC_NAME_STRATEGY);
 
     assertThat(topicCat).isPresent();
     assertThat(topicCat.get().getSchemas()).hasSize(2);
-    assertThat(topicCat.get().getSchemas().get(0).getValueSubject().getOptionalSchemaFile()).isNotEmpty();
-    assertThat(topicCat.get().getSchemas().get(1).getValueSubject().getOptionalSchemaFile()).isNotEmpty();
+    assertThat(topicCat.get().getSchemas().get(0).getValueSubject().getOptionalSchemaFile())
+        .isNotEmpty();
+    assertThat(topicCat.get().getSchemas().get(1).getValueSubject().getOptionalSchemaFile())
+        .isNotEmpty();
     assertThat(topicCat.get().getSubjectNameStrategy()).isEqualTo(TOPIC_RECORD_NAME_STRATEGY);
   }
 
@@ -335,7 +337,7 @@ public class TopologySerdesTest {
 
     List<SchemaRegistryInstance> listOfSR =
         topology.getPlatform().getSchemaRegistry().getInstances();
-    assertEquals(2, listOfSR.size());
+    assertThat(listOfSR).hasSize(2);
     assertEquals("User:SchemaRegistry01", listOfSR.get(0).getPrincipal());
     assertEquals("foo", listOfSR.get(0).topicString());
     assertEquals("bar", listOfSR.get(0).groupString());
@@ -343,13 +345,13 @@ public class TopologySerdesTest {
 
     List<ControlCenterInstance> listOfC3 = topology.getPlatform().getControlCenter().getInstances();
 
-    assertEquals(1, listOfC3.size());
+    assertThat(listOfC3).hasSize(1);
     assertEquals("User:ControlCenter", listOfC3.get(0).getPrincipal());
     assertEquals("controlcenter", listOfC3.get(0).getAppId());
 
     List<KsqlServerInstance> listOfKsql = topology.getPlatform().getKsqlServer().getInstances();
 
-    assertEquals(2, listOfKsql.size());
+    assertThat(listOfKsql).hasSize(2);
     assertEquals("User:ksql", listOfKsql.get(0).getPrincipal());
     assertEquals("ksql-server1", listOfKsql.get(0).getKsqlDbId());
     assertEquals("User:foo", listOfKsql.get(0).getOwner());
@@ -365,10 +367,18 @@ public class TopologySerdesTest {
         parser.deserialise(TestUtils.getResourceFile("/descriptor-only-topics.yaml"));
 
     assertEquals("contextOrg", topology.getContext());
-    assertTrue(topology.getProjects().get(0).getConnectors().isEmpty());
-    assertTrue(topology.getProjects().get(0).getProducers().isEmpty());
-    assertTrue(topology.getProjects().get(0).getStreams().isEmpty());
-    assertTrue(topology.getProjects().get(0).getZookeepers().isEmpty());
+    assertThat(topology.getProjects())
+        .first()
+        .extracting(Project::getConnectors)
+        .asList()
+        .isEmpty();
+    assertThat(topology.getProjects()).first().extracting(Project::getProducers).asList().isEmpty();
+    assertThat(topology.getProjects()).first().extracting(Project::getStreams).asList().isEmpty();
+    assertThat(topology.getProjects())
+        .first()
+        .extracting(Project::getZookeepers)
+        .asList()
+        .isEmpty();
   }
 
   @Test
@@ -378,7 +388,7 @@ public class TopologySerdesTest {
 
     var project = topology.getProjects().get(0);
     assertEquals("context", topology.getContext());
-    assertTrue(project.getConnectors().isEmpty());
+    assertThat(project.getConnectors()).isEmpty();
   }
 
   @Test
@@ -409,8 +419,8 @@ public class TopologySerdesTest {
     Topology topology = parser.deserialise(TestUtils.getResourceFile("/descriptor-with-rbac.yaml"));
     Project myProject = topology.getProjects().get(0);
 
-    assertEquals(2, myProject.getRbacRawRoles().size());
-    assertEquals(3, myProject.getSchemas().size());
+    assertThat(myProject.getRbacRawRoles()).hasSize(2);
+    assertThat(myProject.getSchemas()).hasSize(3);
     assertSchemas(
         myProject.getSchemas().get(0),
         "User:App0",
@@ -434,22 +444,20 @@ public class TopologySerdesTest {
     assertEquals("jdbc-sync", connector.getConnectors().get().get(0));
     assertEquals("ibmmq-source", connector.getConnectors().get().get(1));
 
-    Optional<Map<String, List<User>>> rbacOptional =
-        topology.getPlatform().getSchemaRegistry().getRbac();
-    assertTrue(rbacOptional.isPresent());
+    assertThat(topology.getPlatform().getSchemaRegistry().getRbac())
+        .hasValueSatisfying(
+            rbac -> {
+              Set<String> keys = Collections.singleton("Operator");
+              assertEquals(keys, rbac.keySet());
+              assertThat(rbac.get("Operator")).hasSize(2);
+            });
 
-    Set<String> keys = Collections.singleton("Operator");
-    assertEquals(keys, rbacOptional.get().keySet());
-    assertEquals(2, rbacOptional.get().get("Operator").size());
-
-    Optional<Map<String, List<User>>> kafkaRbacOptional =
-        topology.getPlatform().getKafka().getRbac();
-    assertTrue(kafkaRbacOptional.isPresent());
-
-    Set<String> kafkaKeys =
-        new HashSet<>(Arrays.asList("SecurityAdmin", "ClusterAdmin"));
-    assertEquals(kafkaKeys, kafkaRbacOptional.get().keySet());
-    assertEquals(1, kafkaRbacOptional.get().get("SecurityAdmin").size());
+    assertThat(topology.getPlatform().getKafka().getRbac())
+        .hasValueSatisfying(
+            kafkaRbac -> {
+              assertThat(kafkaRbac.keySet()).containsOnly("SecurityAdmin", "ClusterAdmin");
+              assertThat(kafkaRbac.get("SecurityAdmin")).hasSize(1);
+            });
   }
 
   @Test
@@ -457,7 +465,7 @@ public class TopologySerdesTest {
     Topology topology = parser.deserialise(TestUtils.getResourceFile("/descriptor-connector.yaml"));
     Project project = topology.getProjects().get(0);
     List<KafkaConnectArtefact> artefacts = project.getConnectorArtefacts().getConnectors();
-    assertEquals(2, artefacts.size());
+    assertThat(artefacts).hasSize(2);
     assertThat(artefacts.get(0)).hasFieldOrPropertyWithValue("path", "connectors/source-jdbc.json");
     assertThat(artefacts.get(0)).hasFieldOrPropertyWithValue("serverLabel", "connector0");
     assertThat(artefacts.get(1)).hasFieldOrPropertyWithValue("path", "connectors/sink-jdbc.json");
@@ -471,7 +479,7 @@ public class TopologySerdesTest {
     Project fooProject = topology.getProjects().get(0);
 
     assertEquals("foo", fooProject.getName());
-    assertEquals(2, fooProject.getConnectors().size());
+    assertThat(fooProject.getConnectors()).hasSize(2);
     assertEquals("User:Connect1", fooProject.getConnectors().get(0).getPrincipal());
     assertEquals("User:Connect2", fooProject.getConnectors().get(1).getPrincipal());
   }
@@ -495,7 +503,7 @@ public class TopologySerdesTest {
 
     Project p = topology.getProjects().get(0);
 
-    assertEquals(2, p.getTopics().size());
+    assertThat(p.getTopics()).hasSize(2);
     assertEquals("contextOrg_source_foo_foo", p.getTopics().get(0).toString());
     assertEquals("contextOrg_source_foo_bar_avro", p.getTopics().get(1).toString());
   }
@@ -519,7 +527,7 @@ public class TopologySerdesTest {
 
     Project p = topology.getProjects().get(0);
 
-    assertEquals(2, p.getTopics().size());
+    assertThat(p.getTopics()).hasSize(2);
     assertEquals("source.contextOrg.foo.foo", p.getTopics().get(0).toString());
     assertEquals("source.contextOrg.foo.bar", p.getTopics().get(1).toString());
   }
@@ -545,7 +553,7 @@ public class TopologySerdesTest {
 
     Project p = topology.getProjects().get(0);
 
-    assertEquals(2, p.getTopics().size());
+    assertThat(p.getTopics()).hasSize(2);
     assertEquals("context.foo.foo", p.getTopics().get(0).toString());
     assertEquals("context.foo.bar.avro", p.getTopics().get(1).toString());
   }
@@ -762,9 +770,9 @@ public class TopologySerdesTest {
     TopologySerdes parser = new TopologySerdes(new Configuration(), FileType.JSON, new PlanMap());
     Topology topology = parser.deserialise(TestUtils.getResourceFile("/descriptor.json"));
 
-    assertEquals(1, topology.getProjects().size());
+    assertThat(topology.getProjects()).hasSize(1);
     assertEquals("foo", topology.getProjects().get(0).getName());
-    assertEquals(2, topology.getProjects().get(0).getTopics().size());
+    assertThat(topology.getProjects().get(0).getTopics()).hasSize(2);
   }
 
   @Test

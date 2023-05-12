@@ -1,5 +1,7 @@
 package com.purbon.kafka.topology.integration;
 
+import static org.junit.Assert.*;
+
 import com.purbon.kafka.topology.integration.containerutils.ContainerFactory;
 import com.purbon.kafka.topology.integration.containerutils.ContainerTestUtils;
 import com.purbon.kafka.topology.integration.containerutils.SaslPlaintextKafkaContainer;
@@ -10,7 +12,6 @@ import org.apache.kafka.common.errors.GroupAuthorizationException;
 import org.apache.kafka.common.errors.SaslAuthenticationException;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -130,7 +131,7 @@ public final class AclProducerAndConsumerIT {
             return !values.isEmpty();
           });
       if (!values.isEmpty()) {
-        Assert.fail("Unable to consume all messages.");
+        fail("Unable to consume all messages.");
       }
     }
   }

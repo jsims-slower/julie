@@ -3,7 +3,7 @@ package com.purbon.kafka.topology.integration;
 import static com.purbon.kafka.topology.CommandLineInterface.*;
 import static com.purbon.kafka.topology.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import com.purbon.kafka.topology.BackendController;
 import com.purbon.kafka.topology.Configuration;
@@ -26,28 +26,17 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.Config;
+import org.apache.kafka.clients.admin.ConfigEntry;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.config.ConfigResource.Type;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
@@ -121,7 +110,7 @@ public class TopicManagerIT {
     topicManager.updatePlan(topology, plan);
     plan.run();
 
-    verifyTopics(Arrays.asList(topicA.toString(), topicB.toString()));
+    verifyTopics(topicA.toString(), topicB.toString());
   }
 
   @Test(expected = RemoteValidationException.class)
@@ -175,7 +164,7 @@ public class TopicManagerIT {
     topicManager.updatePlan(topology, plan);
     plan.run();
 
-    verifyTopics(Arrays.asList(topicA.toString(), topicB.toString()));
+    verifyTopics(topicA.toString(), topicB.toString());
   }
 
   @Test(expected = IOException.class)
@@ -222,7 +211,7 @@ public class TopicManagerIT {
     topicManager.updatePlan(topology, plan);
     plan.run();
 
-    verifyTopics(Arrays.asList(topicA.toString(), topicB.toString()));
+    verifyTopics(topicA.toString(), topicB.toString());
 
     Topology upTopology = new TopologyImpl();
     upTopology.setContext("testTopicCreationWithChangedTopology");
@@ -247,7 +236,7 @@ public class TopicManagerIT {
     topicManager.updatePlan(upTopology, plan);
     plan.run();
 
-    verifyTopics(Arrays.asList(topicA.toString(), topicB.toString()));
+    verifyTopics(topicA.toString(), topicB.toString());
   }
 
   @Test
@@ -284,7 +273,7 @@ public class TopicManagerIT {
     topicManager.updatePlan(topology, plan);
     plan.run();
 
-    verifyTopics(Arrays.asList(topicA.toString(), internalTopic, topicC.toString()), 2);
+    verifyTopics(2, topicA.toString(), internalTopic, topicC.toString());
   }
 
   private String createInternalTopic() {
@@ -369,19 +358,19 @@ public class TopicManagerIT {
 
     Map<ConfigResource, Config> configs = kafkaAdminClient.describeConfigs(resources).all().get();
 
-    Config topicConfig = configs.get(resource);
-    Assert.assertNotNull(topicConfig);
-
-    topicConfig
-        .entries()
-        .forEach(
-            entry -> {
-              if (!entry.isDefault()) {
-                if (config.get(entry.name()) != null)
-                  Assert.assertEquals(config.get(entry.name()), entry.value());
-                Assert.assertFalse(removedConfigs.contains(entry.name()));
-              }
-            });
+    assertThat(configs.get(resource))
+        .isNotNull()
+        .satisfies(
+            topicConfig ->
+                assertThat(topicConfig.entries())
+                    .isNotEmpty()
+                    .filteredOn(Predicate.not(ConfigEntry::isDefault))
+                    .allSatisfy(
+                        entry -> {
+                          if (config.get(entry.name()) != null)
+                            assertEquals(config.get(entry.name()), entry.value());
+                          assertThat(removedConfigs).doesNotContain(entry.name());
+                        }));
   }
 
   private HashMap<String, String> buildDummyTopicConfig() {
@@ -391,27 +380,21 @@ public class TopicManagerIT {
     return config;
   }
 
-  private void verifyTopics(List<String> topics) throws ExecutionException, InterruptedException {
-    verifyTopics(topics, topics.size());
+  private void verifyTopics(String... topics) throws ExecutionException, InterruptedException {
+    verifyTopics(topics.length, topics);
   }
 
-  private void verifyTopics(List<String> topics, int topicsCount)
+  private void verifyTopics(int topicsCount, String... topics)
       throws ExecutionException, InterruptedException {
 
     Set<String> topicNames = kafkaAdminClient.listTopics().names().get();
-    topics.forEach(
-        topic -> assertTrue("Topic " + topic + " not found", topicNames.contains(topic)));
-    boolean isInternal = false;
-    for (String topic : topicNames) {
-      if (topic.startsWith("_")) {
-        isInternal = true;
-        break;
-      }
-    }
+    assertThat(topicNames).contains(topics);
+    assertThat(topicNames)
+        .describedAs("Internal topics not found")
+        .anyMatch(topic -> topic.startsWith("_"));
     Set<String> nonInternalTopics =
         topicNames.stream().filter(topic -> !topic.startsWith("_")).collect(Collectors.toSet());
 
-    assertThat(topicsCount).isLessThanOrEqualTo(nonInternalTopics.size());
-    assertTrue("Internal topics not found", isInternal);
+    assertThat(nonInternalTopics).hasSizeGreaterThanOrEqualTo(topicsCount);
   }
 }

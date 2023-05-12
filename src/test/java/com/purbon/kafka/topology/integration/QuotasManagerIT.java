@@ -2,7 +2,7 @@ package com.purbon.kafka.topology.integration;
 
 import static com.purbon.kafka.topology.CommandLineInterface.BROKERS_OPTION;
 import static com.purbon.kafka.topology.Constants.*;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.purbon.kafka.topology.*;
 import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
@@ -147,11 +147,11 @@ public class QuotasManagerIT {
 
     quotasManager.assignQuotasPrincipal(quotas);
     // Verify Quotas
-    assertTrue(verifyQuotasOnlyUser(quotas).stream().allMatch(f -> f.equals(true)));
+    assertThat(verifyQuotasOnlyUser(quotas)).allMatch(Boolean.TRUE::equals);
 
     // Remove quota
     quotasManager.removeQuotasPrincipal(List.of(new User("user3")));
-    assertTrue(verifyQuotasOnlyUser(quotas).stream().allMatch(f -> f.equals(false)));
+    assertThat(verifyQuotasOnlyUser(quotas)).allMatch(Boolean.FALSE::equals);
   }
 
   @Test
@@ -167,14 +167,14 @@ public class QuotasManagerIT {
     quotas.add(quota);
     quotasManager.assignQuotasPrincipal(quotas);
     // Verify Quotas
-    assertTrue(verifyQuotasOnlyUser(quotas).stream().allMatch(f -> f.equals(true)));
+    assertThat(verifyQuotasOnlyUser(quotas)).allMatch(Boolean.TRUE::equals);
 
     // change value
     Quota quotaUpdate = new Quota("user1", Optional.of(150.0), Optional.of(250.0));
     quotas.clear();
     quotas.add(quotaUpdate);
     quotasManager.assignQuotasPrincipal(quotas);
-    assertTrue(verifyQuotasOnlyUser(quotas).stream().allMatch(f -> f.equals(true)));
+    assertThat(verifyQuotasOnlyUser(quotas)).allMatch(Boolean.TRUE::equals);
   }
 
   @Test
@@ -192,12 +192,12 @@ public class QuotasManagerIT {
     quotas.add(quota2);
     quotasManager.assignQuotasPrincipal(quotas);
     // Verify Quotas
-    assertTrue(verifyQuotasOnlyUser(quotas).stream().allMatch(f -> f.equals(true)));
+    assertThat(verifyQuotasOnlyUser(quotas)).allMatch(Boolean.TRUE::equals);
 
     quotasManager.removeQuotasPrincipal(List.of(new User("user2")));
-    assertTrue(verifyQuotasOnlyUser(List.of(quota)).stream().allMatch(f -> f.equals(true)));
+    assertThat(verifyQuotasOnlyUser(List.of(quota))).allMatch(Boolean.TRUE::equals);
 
-    assertTrue(verifyQuotasOnlyUser(List.of(quota2)).stream().allMatch(f -> f.equals(false)));
+    assertThat(verifyQuotasOnlyUser(List.of(quota2))).allMatch(Boolean.FALSE::equals);
   }
 
   private List<Boolean> verifyQuotasOnlyUser(List<Quota> quotas)
@@ -221,14 +221,11 @@ public class QuotasManagerIT {
   }
 
   private void verifyQuotaAssigment(Quota q, Map<String, Double> map) {
-    if (q.getProducer_byte_rate().isPresent()) {
-      assertTrue(map.get("producer_byte_rate").equals(q.getProducer_byte_rate().get()));
-    }
-    if (q.getConsumer_byte_rate().isPresent()) {
-      assertTrue(map.get("consumer_byte_rate").equals(q.getConsumer_byte_rate().get()));
-    }
-    if (q.getRequest_percentage().isPresent()) {
-      assertTrue(map.get("request_percentage").equals(q.getRequest_percentage().get()));
-    }
+    assertThat(Optional.ofNullable(map.get("producer_byte_rate")))
+        .isEqualTo(q.getProducer_byte_rate());
+    assertThat(Optional.ofNullable(map.get("consumer_byte_rate")))
+        .isEqualTo(q.getConsumer_byte_rate());
+    assertThat(Optional.ofNullable(map.get("request_percentage")))
+        .isEqualTo(q.getRequest_percentage());
   }
 }

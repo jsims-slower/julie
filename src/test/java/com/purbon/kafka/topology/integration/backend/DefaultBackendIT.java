@@ -1,7 +1,6 @@
 package com.purbon.kafka.topology.integration.backend;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.purbon.kafka.topology.BackendController;
 import com.purbon.kafka.topology.model.cluster.ServiceAccount;
@@ -9,10 +8,7 @@ import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import org.apache.kafka.common.resource.ResourceType;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +33,7 @@ public class DefaultBackendIT {
     ServiceAccount serviceAccount = new ServiceAccount("1", "name", "description");
     ServiceAccount serviceAccount2 = new ServiceAccount("2", "name2", "description2");
 
-    Set<ServiceAccount> accounts = new HashSet<>(Arrays.asList(serviceAccount, serviceAccount2));
+    Set<ServiceAccount> accounts = Set.of(serviceAccount, serviceAccount2);
 
     backend.addBindings(Collections.singletonList(binding));
     backend.addServiceAccounts(accounts);
@@ -70,6 +66,6 @@ public class DefaultBackendIT {
     assertThat(backend.getBindings()).isNotNull();
     assertThat(backend.getBindings()).isEqualTo(Collections.singleton(binding));
     assertThat(backend.getServiceAccounts()).isNotNull();
-    assertEquals(0, backend.getServiceAccounts().size());
+    assertThat(backend.getServiceAccounts()).isEmpty();
   }
 }

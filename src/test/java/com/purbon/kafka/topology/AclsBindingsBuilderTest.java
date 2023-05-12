@@ -46,7 +46,7 @@ public class AclsBindingsBuilderTest {
 
     List<TopologyAclBinding> aclBindings =
         builder.buildBindingsForConsumers(Collections.singleton(consumer), "bar", false);
-    assertThat(aclBindings.size()).isEqualTo(3);
+    assertThat(aclBindings).hasSize(3);
     assertThat(aclBindings)
         .contains(buildTopicLevelAcl("User:foo", "bar", PatternType.LITERAL, AclOperation.READ));
     assertThat(aclBindings)
@@ -63,7 +63,7 @@ public class AclsBindingsBuilderTest {
 
     List<TopologyAclBinding> aclBindings =
         builder.buildBindingsForConsumers(Collections.singleton(consumer), "bar", false);
-    assertThat(aclBindings.size()).isEqualTo(3);
+    assertThat(aclBindings).hasSize(3);
     assertThat(aclBindings)
         .contains(buildTopicLevelAcl("User:foo", "bar", PatternType.LITERAL, AclOperation.READ));
     assertThat(aclBindings)
@@ -78,7 +78,7 @@ public class AclsBindingsBuilderTest {
     Producer producer = new Producer("User:foo");
     List<TopologyAclBinding> aclBindings =
         builder.buildBindingsForProducers(Collections.singleton(producer), "bar", false);
-    assertThat(aclBindings.size()).isEqualTo(2);
+    assertThat(aclBindings).hasSize(2);
     assertThat(aclBindings)
         .contains(buildTopicLevelAcl("User:foo", "bar", PatternType.LITERAL, AclOperation.WRITE));
     assertThat(aclBindings)
@@ -97,26 +97,30 @@ public class AclsBindingsBuilderTest {
     List<TopologyAclBinding> aclBindings =
         builder.buildBindingsForStreamsApp(
             "User:foo", "app1", singletonList("bar"), emptyList(), true);
-    assertThat(aclBindings.size()).isEqualTo(5);
+    assertThat(aclBindings).hasSize(5);
 
     assertThat(aclBindings)
         .contains(buildTopicLevelAcl("User:foo", "bar", PatternType.LITERAL, AclOperation.READ));
 
-    assertThat(aclBindings)
-        .contains(
-            buildTransactionIdLevelAcl(
-                producer.getPrincipal(),
-                producer.getApplicationId().get(),
-                PatternType.PREFIXED,
-                AclOperation.DESCRIBE));
+    assertThat(producer.getApplicationId())
+        .hasValueSatisfying(
+            applicationId -> {
+              assertThat(aclBindings)
+                  .contains(
+                      buildTransactionIdLevelAcl(
+                          producer.getPrincipal(),
+                          applicationId,
+                          PatternType.PREFIXED,
+                          AclOperation.DESCRIBE));
 
-    assertThat(aclBindings)
-        .contains(
-            buildTransactionIdLevelAcl(
-                producer.getPrincipal(),
-                producer.getApplicationId().get(),
-                PatternType.PREFIXED,
-                AclOperation.WRITE));
+              assertThat(aclBindings)
+                  .contains(
+                      buildTransactionIdLevelAcl(
+                          producer.getPrincipal(),
+                          applicationId,
+                          PatternType.PREFIXED,
+                          AclOperation.WRITE));
+            });
   }
 
   @Test
@@ -124,7 +128,7 @@ public class AclsBindingsBuilderTest {
     Producer producer = new Producer("User:foo", "1234", true);
     List<TopologyAclBinding> aclBindings =
         builder.buildBindingsForProducers(Collections.singleton(producer), "bar", false);
-    assertThat(aclBindings.size()).isEqualTo(5);
+    assertThat(aclBindings).hasSize(5);
 
     assertThat(aclBindings)
         .contains(buildTopicLevelAcl("User:foo", "bar", PatternType.LITERAL, AclOperation.WRITE));
@@ -132,21 +136,25 @@ public class AclsBindingsBuilderTest {
         .contains(
             buildTopicLevelAcl("User:foo", "bar", PatternType.LITERAL, AclOperation.DESCRIBE));
 
-    assertThat(aclBindings)
-        .contains(
-            buildTransactionIdLevelAcl(
-                producer.getPrincipal(),
-                producer.getTransactionId().get(),
-                PatternType.LITERAL,
-                AclOperation.DESCRIBE));
+    assertThat(producer.getTransactionId())
+        .hasValueSatisfying(
+            transactionId -> {
+              assertThat(aclBindings)
+                  .contains(
+                      buildTransactionIdLevelAcl(
+                          producer.getPrincipal(),
+                          transactionId,
+                          PatternType.LITERAL,
+                          AclOperation.DESCRIBE));
 
-    assertThat(aclBindings)
-        .contains(
-            buildTransactionIdLevelAcl(
-                producer.getPrincipal(),
-                producer.getTransactionId().get(),
-                PatternType.LITERAL,
-                AclOperation.WRITE));
+              assertThat(aclBindings)
+                  .contains(
+                      buildTransactionIdLevelAcl(
+                          producer.getPrincipal(),
+                          transactionId,
+                          PatternType.LITERAL,
+                          AclOperation.WRITE));
+            });
 
     assertThat(aclBindings)
         .contains(buildClusterLevelAcl(producer.getPrincipal(), AclOperation.IDEMPOTENT_WRITE));
@@ -157,7 +165,7 @@ public class AclsBindingsBuilderTest {
     Producer producer = new Producer("User:foo", "foo*", true);
     List<TopologyAclBinding> aclBindings =
         builder.buildBindingsForProducers(Collections.singleton(producer), "bar", false);
-    assertThat(aclBindings.size()).isEqualTo(5);
+    assertThat(aclBindings).hasSize(5);
 
     assertThat(aclBindings)
         .contains(buildTopicLevelAcl("User:foo", "bar", PatternType.LITERAL, AclOperation.WRITE));
@@ -184,7 +192,7 @@ public class AclsBindingsBuilderTest {
     Producer producer = new Producer("User:foo", null, true);
     List<TopologyAclBinding> aclBindings =
         builder.buildBindingsForProducers(Collections.singleton(producer), "bar", false);
-    assertThat(aclBindings.size()).isEqualTo(3);
+    assertThat(aclBindings).hasSize(3);
 
     assertThat(aclBindings)
         .contains(buildTopicLevelAcl("User:foo", "bar", PatternType.LITERAL, AclOperation.WRITE));
@@ -318,7 +326,7 @@ public class AclsBindingsBuilderTest {
         builder.buildBindingsForStreamsApp(
             stream.getPrincipal(), "prefix", readTopics, writeTopics, false);
 
-    assertThat(bindings.size()).isEqualTo(4);
+    assertThat(bindings).hasSize(4);
     assertThat(bindings)
         .contains(
             buildTopicLevelAcl(

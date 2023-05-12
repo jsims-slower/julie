@@ -37,12 +37,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
-
-  private static final Logger LOGGER = LogManager.getLogger(TopologyCustomDeserializer.class);
 
   private static final String PROJECTS_KEY = "projects";
   private static final String CONTEXT_KEY = "context";
@@ -73,7 +71,7 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
 
   private static final String SPECIAL_TOPICS_NODE = "special_topics";
 
-  private static List<String> projectCoreKeys =
+  private static final List<String> projectCoreKeys =
       Arrays.asList(
           NAME_KEY,
           CONSUMERS_KEY,
@@ -102,11 +100,10 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
     JsonNode rootNode = parser.getCodec().readTree(parser);
     validateRequiresKeys(rootNode, CONTEXT_KEY);
     if (rootNode.get(PROJECTS_KEY) == null) {
-      LOGGER.warn(
-          PROJECTS_KEY
-              + " is missing for topology: "
-              + rootNode.get(CONTEXT_KEY).asText()
-              + ", this might be a required field, be aware.");
+      log.warn(
+          "{} is missing for topology: {}, this might be a required field, be aware.",
+          PROJECTS_KEY,
+          rootNode.get(CONTEXT_KEY).asText());
     }
 
     Topology topology = new TopologyImpl(config);
@@ -136,7 +133,7 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
       parse(platformNode, KSQL_KEY, parser, KsqlServer.class)
           .ifPresent(obj -> platform.setKsqlServer((KsqlServer) obj));
     } else {
-      LOGGER.debug("No platform components defined in the topology.");
+      log.debug("No platform components defined in the topology.");
     }
 
     topology.setPlatform(platform);
@@ -164,15 +161,15 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
     return topology;
   }
 
-  private Optional<Object> parse(JsonNode node, String key, JsonParser parser, Class klass)
+  private Optional<Object> parse(JsonNode node, String key, JsonParser parser, Class<?> klass)
       throws JsonProcessingException {
     JsonNode pNode = node.get(key);
     if (pNode == null) {
-      LOGGER.debug(String.format("%s key is missing.", key));
+      log.debug("{} key is missing.", key);
       return Optional.empty();
     }
     Object obj = parser.getCodec().treeToValue(pNode, klass);
-    LOGGER.debug(String.format("Extracting key %s with value %s", key, obj));
+    log.debug("Extracting key {} with value {}", key, obj);
     return Optional.of(obj);
   }
 
@@ -182,9 +179,7 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
     List<Project> projects = new ArrayList<>();
     for (int i = 0; i < projectsNode.size(); i++) {
       Project project = parseProject(parser, projectsNode.get(i), topology, config);
-      LOGGER.debug(
-          String.format(
-              "Adding project %s to the Topology %s", project.getName(), topology.getContext()));
+      log.debug("Adding project {} to the Topology {}", project.getName(), topology.getContext());
       projects.add(project);
     }
     return projects;
@@ -194,65 +189,69 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
       JsonParser parser, JsonNode rootNode, Topology topology, Configuration config)
       throws IOException {
 
-    Iterable<String> it = () -> rootNode.fieldNames();
+    Iterable<String> it = rootNode::fieldNames;
     List<String> keys =
         StreamSupport.stream(it.spliterator(), false)
             .filter(key -> !Arrays.asList(TOPICS_KEY, NAME_KEY).contains(key))
             .collect(Collectors.toList());
-    Map<String, JsonNode> rootNodes = Maps.asMap(new HashSet<>(keys), (key) -> rootNode.get(key));
+    Map<String, JsonNode> rootNodes = Maps.asMap(new HashSet<>(keys), rootNode::get);
 
-    Map<String, PlatformSystem> mapOfValues = new HashMap<>();
+    PlatformSystem<Consumer> consumerPS = null;
+    PlatformSystem<Producer> producerPS = null;
+    PlatformSystem<Connector> connectorPS = null;
+    PlatformSystem<KStream> kStreamPS = null;
+    PlatformSystem<Schemas> schemasPS = null;
+    PlatformSystem<KSqlApp> kSqlAppPS = null;
+    Map<String, PlatformSystem<Other>> othersPS = new HashMap<>();
+
     for (String key : rootNodes.keySet()) {
       JsonNode keyNode = rootNodes.get(key);
       if (keyNode != null) {
-        Optional<PlatformSystem> optionalPlatformSystem;
         switch (key) {
           case CONSUMERS_KEY:
-            optionalPlatformSystem = doConsumerElements(parser, keyNode);
+            consumerPS = doConsumerElements(parser, keyNode);
             break;
           case PRODUCERS_KEY:
-            optionalPlatformSystem = doProducerElements(parser, keyNode);
+            producerPS = doProducerElements(parser, keyNode);
             break;
           case CONNECTORS_KEY:
-            optionalPlatformSystem = doKafkaConnectElements(parser, keyNode);
+            connectorPS = doKafkaConnectElements(parser, keyNode);
             break;
           case STREAMS_KEY:
-            optionalPlatformSystem = doStreamsElements(parser, keyNode);
+            kStreamPS = doStreamsElements(parser, keyNode);
             break;
           case SCHEMAS_KEY:
-            optionalPlatformSystem = doSchemasElements(parser, keyNode);
+            schemasPS = doSchemasElements(parser, keyNode);
             break;
           case KSQL_KEY:
-            optionalPlatformSystem = doKSqlElements(parser, keyNode);
+            kSqlAppPS = doKSqlElements(parser, keyNode);
             break;
           default:
-            optionalPlatformSystem = Optional.empty();
             if (!key.equalsIgnoreCase(RBAC_KEY)) {
-              optionalPlatformSystem = doOtherElements(parser, keyNode);
+              othersPS.put(key, doOtherElements(parser, keyNode));
             }
         }
-        optionalPlatformSystem.ifPresent(ps -> mapOfValues.put(key, ps));
       }
     }
 
     ProjectImpl project =
         new ProjectImpl(
             rootNode.get(NAME_KEY).asText(),
-            Optional.ofNullable(mapOfValues.get(CONSUMERS_KEY)),
-            Optional.ofNullable(mapOfValues.get(PRODUCERS_KEY)),
-            Optional.ofNullable(mapOfValues.get(STREAMS_KEY)),
-            Optional.ofNullable(mapOfValues.get(CONNECTORS_KEY)),
-            Optional.ofNullable(mapOfValues.get(SCHEMAS_KEY)),
-            Optional.ofNullable(mapOfValues.get(KSQL_KEY)),
+            Optional.ofNullable(consumerPS),
+            Optional.ofNullable(producerPS),
+            Optional.ofNullable(kStreamPS),
+            Optional.ofNullable(connectorPS),
+            Optional.ofNullable(schemasPS),
+            Optional.ofNullable(kSqlAppPS),
             parseOptionalRbacRoles(rootNode.get(RBAC_KEY)),
-            filterOthers(mapOfValues),
+            filterOthers(othersPS),
             config);
 
     project.setPrefixContextAndOrder(topology.asFullContext(), topology.getOrder());
 
     var topicsNode = rootNode.get(TOPICS_KEY);
     if (topicsNode == null) {
-      LOGGER.warn(
+      log.warn(
           TOPICS_KEY
               + " is missing for project: "
               + project.getName()
@@ -287,9 +286,8 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
   private Function<String, Boolean> shouldGenerateDlqTopic(
       List<Pattern> allowList, List<Pattern> denyList) {
     return name -> {
-      var foundInAllowList =
-          allowList.stream().map(e -> e.matcher(name).matches()).anyMatch(p -> p);
-      var foundInDenyList = denyList.stream().map(e -> e.matcher(name).matches()).anyMatch(p -> p);
+      var foundInAllowList = allowList.stream().anyMatch(e -> e.matcher(name).matches());
+      var foundInDenyList = denyList.stream().anyMatch(e -> e.matcher(name).matches());
 
       var isAllowedOrEmpty = allowList.isEmpty() || foundInAllowList;
       var isNotDeniedOrEmpty = denyList.isEmpty() || !foundInDenyList;
@@ -298,35 +296,35 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
   }
 
   private List<Map.Entry<String, PlatformSystem<Other>>> filterOthers(
-      Map<String, PlatformSystem> mapOfValues) {
+      Map<String, PlatformSystem<Other>> mapOfValues) {
     return mapOfValues.entrySet().stream()
         .filter(entry -> !projectCoreKeys.contains(entry.getKey()))
-        .map(entry -> Map.entry(entry.getKey(), (PlatformSystem<Other>) entry.getValue()))
+        .map(entry -> Map.entry(entry.getKey(), entry.getValue()))
         .collect(Collectors.toList());
   }
 
-  private Optional<PlatformSystem> doOtherElements(JsonParser parser, JsonNode node)
+  private PlatformSystem<Other> doOtherElements(JsonParser parser, JsonNode node)
       throws JsonProcessingException {
     List<Other> others =
         new JsonSerdesUtils<Other>().parseApplicationUser(parser, node, Other.class);
-    return Optional.of(new PlatformSystem(others));
+    return new PlatformSystem<>(others);
   }
 
-  private Optional<PlatformSystem> doConsumerElements(JsonParser parser, JsonNode node)
+  private PlatformSystem<Consumer> doConsumerElements(JsonParser parser, JsonNode node)
       throws JsonProcessingException {
     List<Consumer> consumers =
         new JsonSerdesUtils<Consumer>().parseApplicationUser(parser, node, Consumer.class);
-    return Optional.of(new PlatformSystem(consumers));
+    return new PlatformSystem<>(consumers);
   }
 
-  private Optional<PlatformSystem> doProducerElements(JsonParser parser, JsonNode node)
+  private PlatformSystem<Producer> doProducerElements(JsonParser parser, JsonNode node)
       throws JsonProcessingException {
     List<Producer> producers =
         new JsonSerdesUtils<Producer>().parseApplicationUser(parser, node, Producer.class);
-    return Optional.of(new PlatformSystem(producers));
+    return new PlatformSystem<>(producers);
   }
 
-  private Optional<PlatformSystem> doKafkaConnectElements(JsonParser parser, JsonNode node)
+  private PlatformSystem<Connector> doKafkaConnectElements(JsonParser parser, JsonNode node)
       throws IOException {
 
     JsonNode acNode = node;
@@ -362,10 +360,10 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
     if (connectors.size() == 1 && connectors.get(0) == null) {
       connectors = new ArrayList<>();
     }
-    return Optional.of(new PlatformSystem(connectors, new KConnectArtefacts(artefacts)));
+    return new PlatformSystem<>(connectors, new KConnectArtefacts(artefacts));
   }
 
-  private Optional<PlatformSystem> doKSqlElements(JsonParser parser, JsonNode node)
+  private PlatformSystem<KSqlApp> doKSqlElements(JsonParser parser, JsonNode node)
       throws JsonProcessingException {
 
     JsonNode acNode = node;
@@ -399,32 +397,30 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
       if (artefactsNode.has(VARS_NODE)) {
         artefactsNode.get(VARS_NODE);
         varsArtefacts.setSessionVars(
-                parser.getCodec().treeToValue(artefactsNode.get(VARS_NODE), Map.class));
+            parser.getCodec().treeToValue(artefactsNode.get(VARS_NODE), Map.class));
       }
     }
 
-    return Optional.of(
-        new PlatformSystem(
-            ksqls, new KsqlArtefacts(streamArtefacts, tableArtefacts, varsArtefacts)));
+    return new PlatformSystem<>(
+        ksqls, new KsqlArtefacts(streamArtefacts, tableArtefacts, varsArtefacts));
   }
 
-  private Optional<PlatformSystem> doStreamsElements(JsonParser parser, JsonNode node)
+  private PlatformSystem<KStream> doStreamsElements(JsonParser parser, JsonNode node)
       throws IOException {
     List<KStream> streams =
         new JsonSerdesUtils<KStream>()
             .parseApplicationUser(parser, node, KStream.class).stream()
-                .map(
+                .peek(
                     ks -> {
                       ks.getTopics().putIfAbsent(KStream.READ_TOPICS, Collections.emptyList());
                       ks.getTopics().putIfAbsent(KStream.WRITE_TOPICS, Collections.emptyList());
-                      return ks;
                     })
                 .collect(Collectors.toList());
 
     for (KStream ks : streams) {
       var topics = ks.getTopics();
       if (topics.get(KStream.READ_TOPICS).isEmpty() || topics.get(KStream.WRITE_TOPICS).isEmpty()) {
-        LOGGER.warn(
+        log.warn(
             "A Kafka Streams application with Id ("
                 + ks.getApplicationId()
                 + ") and Principal ("
@@ -445,14 +441,14 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
                 + " have missing read topics. This field is required.");
       }
     }
-    return Optional.of(new PlatformSystem(streams));
+    return new PlatformSystem<>(streams);
   }
 
-  private Optional<PlatformSystem> doSchemasElements(JsonParser parser, JsonNode node)
+  private PlatformSystem<Schemas> doSchemasElements(JsonParser parser, JsonNode node)
       throws JsonProcessingException {
     List<Schemas> schemas =
         new JsonSerdesUtils<Schemas>().parseApplicationUser(parser, node, Schemas.class);
-    return Optional.of(new PlatformSystem(schemas));
+    return new PlatformSystem<>(schemas);
   }
 
   private void validateEncodingForTopicName(String name) throws IOException {
@@ -471,11 +467,10 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
     if (rbacRootNode == null) return new HashMap<>();
     return StreamSupport.stream(rbacRootNode.spliterator(), true)
         .map(
-            (Function<JsonNode, Pair<String, JsonNode>>)
-                node -> {
-                  String key = node.fieldNames().next();
-                  return new Pair(key, node.get(key));
-                })
+            node -> {
+              String key = node.fieldNames().next();
+              return new Pair<>(key, node.get(key));
+            })
         .flatMap(
             (Function<Pair<String, JsonNode>, Stream<Pair<String, String>>>)
                 principals ->

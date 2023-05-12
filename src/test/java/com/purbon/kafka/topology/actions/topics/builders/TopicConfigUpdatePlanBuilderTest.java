@@ -1,6 +1,8 @@
 package com.purbon.kafka.topology.actions.topics.builders;
 
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 
 import com.purbon.kafka.topology.TopicManager;
@@ -154,8 +156,8 @@ public class TopicConfigUpdatePlanBuilderTest {
 
   private void assertNewUpdatedAndDeletedCounts(
       TopicConfigUpdatePlan plan, int expectedNew, int expectedUpdated, int expectedDeleted) {
-    assertEquals(expectedNew, plan.getNewConfigValues().size());
-    assertEquals(expectedUpdated, plan.getUpdatedConfigValues().size());
-    assertEquals(expectedDeleted, plan.getDeletedConfigValues().size());
+    assertThat(plan.getNewConfigValues()).hasSize(expectedNew);
+    assertThat(plan.getUpdatedConfigValues()).hasSize(expectedUpdated);
+    assertThat(plan.getDeletedConfigValues()).hasSize(expectedDeleted);
   }
 }

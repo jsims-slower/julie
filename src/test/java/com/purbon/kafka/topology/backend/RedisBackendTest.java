@@ -1,7 +1,7 @@
 package com.purbon.kafka.topology.backend;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.times;
@@ -53,8 +53,7 @@ public class RedisBackendTest {
 
     BackendState state = stateProcessor.load();
     assertEquals(1, state.size());
-    assertTrue(state.getBindings().iterator().hasNext());
-    assertEquals("Topic A", state.getBindings().iterator().next().getResourceName());
+    assertThat(state.getBindings()).first().returns("Topic A", TopologyAclBinding::getResourceName);
   }
 
   @NotNull

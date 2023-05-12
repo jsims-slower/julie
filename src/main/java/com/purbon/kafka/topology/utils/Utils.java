@@ -8,12 +8,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Utils {
-
-  private static final Logger LOGGER = LogManager.getLogger(Utils.class);
 
   public static Stream<String> asNullableStream(List<String> items) {
     Optional<List<String>> optional = Optional.ofNullable(items);
@@ -27,7 +25,7 @@ public class Utils {
   public static Path filePath(String file, String rootPath) {
     Path mayBeAbsolutePath = Paths.get(file);
     Path path = mayBeAbsolutePath.isAbsolute() ? mayBeAbsolutePath : Paths.get(rootPath, file);
-    LOGGER.debug(String.format("Artefact File %s loaded from %s", file, path));
+    log.debug("Artefact File {} loaded from {}", file, path);
     return path;
   }
 }

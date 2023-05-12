@@ -34,10 +34,7 @@ import org.apache.kafka.common.resource.ResourceType;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
-import org.mockito.Mock;
-import org.mockito.Mockito;
+import org.mockito.*;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
@@ -50,6 +47,9 @@ public class AccessControlManagerTest {
 
   @Mock PrintStream mockPrintStream;
   @Mock Configuration config;
+
+  @Captor private ArgumentCaptor<List<Consumer>> consumerCaptor;
+  @Captor private ArgumentCaptor<List<Producer>> producerCaptor;
 
   ExecutionPlan plan;
 
@@ -131,12 +131,10 @@ public class AccessControlManagerTest {
 
     accessControlManager.updatePlan(topology, plan);
 
-    ArgumentCaptor<List> argumentCaptor = ArgumentCaptor.forClass(List.class);
-
     verify(aclsBuilder, times(1))
-        .buildBindingsForConsumers(argumentCaptor.capture(), eq(topic.toString()), eq(false));
+        .buildBindingsForConsumers(consumerCaptor.capture(), eq(topic.toString()), eq(false));
 
-    List<Consumer> capturedList = argumentCaptor.getValue();
+    List<Consumer> capturedList = consumerCaptor.getValue();
     assertThat(capturedList).contains(projectConsumer);
     assertThat(capturedList).contains(topicConsumer);
     assertThat(capturedList).hasSize(2);
@@ -207,12 +205,10 @@ public class AccessControlManagerTest {
 
     accessControlManager.updatePlan(topology, plan);
 
-    ArgumentCaptor<List> argumentCaptor = ArgumentCaptor.forClass(List.class);
-
     verify(aclsBuilder, times(1))
-        .buildBindingsForProducers(argumentCaptor.capture(), eq(topic.toString()), eq(false));
+        .buildBindingsForProducers(producerCaptor.capture(), eq(topic.toString()), eq(false));
 
-    List<Producer> capturedList = argumentCaptor.getValue();
+    List<Producer> capturedList = producerCaptor.getValue();
     assertThat(capturedList).contains(projectProducer);
     assertThat(capturedList).contains(topicProducer);
     assertThat(capturedList).hasSize(2);
@@ -577,15 +573,18 @@ public class AccessControlManagerTest {
 
     verify(aclsProvider, times(1)).createBindings(any());
 
-    var operations = bindings.stream().map(b -> b.getOperation()).collect(Collectors.toList());
+    var operations =
+        bindings.stream().map(TopologyAclBinding::getOperation).collect(Collectors.toList());
     assertThat(operations).contains("READ");
     assertThat(operations).contains("WRITE");
 
-    var users = bindings.stream().map(b -> b.getPrincipal()).collect(Collectors.toList());
+    var users =
+        bindings.stream().map(TopologyAclBinding::getPrincipal).collect(Collectors.toList());
     assertThat(users).contains("User:foo");
     assertThat(users).contains("User:bar");
 
-    var topics = bindings.stream().map(b -> b.getResourceName()).collect(Collectors.toSet());
+    var topics =
+        bindings.stream().map(TopologyAclBinding::getResourceName).collect(Collectors.toSet());
     assertThat(topics).contains("TopicA");
   }
 
@@ -665,7 +664,7 @@ public class AccessControlManagerTest {
     accessControlManager.updatePlan(builder.buildTopology(), plan);
 
     // Check that we only have one action not 2
-    assertEquals(1, plan.getActions().size());
+    assertThat(plan.getActions()).hasSize(1);
 
     // Check that the action bindings are for the managed prefix topic, not the non-managed prefix.
     assertEquals(
@@ -708,7 +707,7 @@ public class AccessControlManagerTest {
     accessControlManager.updatePlan(builder.buildTopology(), plan);
 
     // Check that we only have one action
-    assertEquals(1, plan.getActions().size());
+    assertThat(plan.getActions()).hasSize(1);
 
     // Check that the action bindings are for the managed prefix group, not the non-managed prefix.
     assertEquals(
@@ -758,7 +757,7 @@ public class AccessControlManagerTest {
     accessControlManager.updatePlan(builder.buildTopology(), plan);
 
     // Check that we only have one action
-    assertEquals(1, plan.getActions().size());
+    assertThat(plan.getActions()).hasSize(1);
 
     // Check that the action bindings are for the managed service group, not the non-managed prefix.
     assertEquals(

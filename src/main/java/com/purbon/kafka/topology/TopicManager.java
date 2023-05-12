@@ -22,10 +22,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-@Log4j2
+@Slf4j
 public class TopicManager implements ExecutionPlanUpdater {
 
   public static final String NUM_PARTITIONS = "num.partitions";
@@ -84,16 +84,12 @@ public class TopicManager implements ExecutionPlanUpdater {
     createTopicActions.forEach(plan::add); // Do createActions before update actions
     updateTopicConfigActions.forEach(plan::add);
 
-    topics
-        .entrySet()
-        .stream()
-        .flatMap(topicEntry -> Stream.ofNullable(
-            RegisterSchemaAction.createIfHasChanges(
-                schemaRegistryManager,
-                topicEntry.getValue(),
-                topicEntry.getKey()
-            )
-        ))
+    topics.entrySet().stream()
+        .map(
+            topicEntry ->
+                new RegisterSchemaAction(
+                    schemaRegistryManager, topicEntry.getValue(), topicEntry.getKey()))
+        .filter(RegisterSchemaAction::hasChanges)
         .forEach(plan::add);
 
     if (config.isAllowDeleteTopics()) {

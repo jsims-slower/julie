@@ -11,15 +11,22 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 
-@Log4j2
+@Slf4j
 public class SchemaRegistryManager {
   /**
    * @see io.confluent.kafka.schemaregistry.rest.exceptions.Errors
    */
+  public static final int SUBJECT_NOT_FOUND_ERROR_CODE = 40401;
+
+  public static final int VERSION_NOT_FOUND_ERROR_CODE = 40402;
   public static final int SCHEMA_NOT_FOUND_ERROR_CODE = 40403;
+  public static final Set<Integer> NOT_FOUND_ERROR_CODES =
+      Set.of(
+          SUBJECT_NOT_FOUND_ERROR_CODE, VERSION_NOT_FOUND_ERROR_CODE, SCHEMA_NOT_FOUND_ERROR_CODE);
 
   static class SchemaRegistryManagerException extends RuntimeException {
     public SchemaRegistryManagerException(String message) {
@@ -62,50 +69,23 @@ public class SchemaRegistryManager {
     try {
       return schemaRegistryClient.getId(subjectName, schema);
     } catch (RestClientException rce) {
-      if (rce.getErrorCode() == SCHEMA_NOT_FOUND_ERROR_CODE)
-        return null;
-      final String msg = String.format(
-          "Failed to lookup schema for subject [%s] based on schema: %s",
-          subjectName,
-          schema
-      );
+      if (NOT_FOUND_ERROR_CODES.contains(rce.getErrorCode())) return null;
+      final String msg =
+          String.format(
+              "Failed to lookup schema for subject [%s] based on schema: %s", subjectName, schema);
       throw new SchemaRegistryManagerException(msg, rce);
     } catch (Exception ex) {
-      final String msg = String.format(
-          "Failed to lookup schema for subject [%s] based on schema: %s",
-          subjectName,
-          schema
-      );
+      final String msg =
+          String.format(
+              "Failed to lookup schema for subject [%s] based on schema: %s", subjectName, schema);
       throw new SchemaRegistryManagerException(msg, ex);
     }
   }
 
-  //public SchemaMetadata getLatest(String subjectName) {
-  //  log.debug("Looking up latest schema for subject [{}]", subjectName);
-  //
-  //  try {
-  //    return schemaRegistryClient.getLatestSchemaMetadata(subjectName);
-  //  } catch (RestClientException rce) {
-  //    if (rce.getErrorCode() == SCHEMA_NOT_FOUND_ERROR_CODE)
-  //      return null;
-  //    final String msg = String.format(
-  //        "Failed to lookup latest schema for subject [%s]",
-  //        subjectName
-  //    );
-  //    throw new SchemaRegistryManagerException(msg, rce);
-  //  } catch (Exception ex) {
-  //    final String msg = String.format(
-  //        "Failed to lookup latest schema for subject [%s]",
-  //        subjectName
-  //    );
-  //    throw new SchemaRegistryManagerException(msg, ex);
-  //  }
-  //}
-
   public CompatibilityLevel setCompatibility(String subject, CompatibilityLevel compatibility) {
     try {
-      return Optional
-          .ofNullable(schemaRegistryClient.updateCompatibility(subject, compatibility.name()))
+      return Optional.ofNullable(
+              schemaRegistryClient.updateCompatibility(subject, compatibility.name()))
           .map(String::trim)
           .filter(Predicate.not(String::isEmpty))
           .map(String::toUpperCase)
@@ -122,16 +102,21 @@ public class SchemaRegistryManager {
 
   public CompatibilityLevel getCompatibility(String subject) {
     try {
-      return Optional
-          .ofNullable(schemaRegistryClient.getCompatibility(subject))
+      return Optional.ofNullable(schemaRegistryClient.getCompatibility(subject))
           .map(String::trim)
           .filter(Predicate.not(String::isEmpty))
           .map(String::toUpperCase)
           .map(CompatibilityLevel::valueOf)
           .orElse(null);
+    } catch (RestClientException rce) {
+      if (NOT_FOUND_ERROR_CODES.contains(rce.getErrorCode())) return null;
+      final String msg =
+          String.format("Failed to get schema compatibility mode for subject '%s'", subject);
+      throw new SchemaRegistryManagerException(msg, rce);
     } catch (Exception ex) {
-      throw new SchemaRegistryManagerException(String.format(
-          "Failed to get schema compatibility mode for subject '%s'", subject), ex);
+      final String msg =
+          String.format("Failed to get schema compatibility mode for subject '%s'", subject);
+      throw new SchemaRegistryManagerException(msg, ex);
     }
   }
 
@@ -151,9 +136,7 @@ public class SchemaRegistryManager {
     final String schemaString;
     try {
       log.debug("Reading schema from schema path {}", schemaPath);
-      schemaString = (schemaPath != null)
-          ? Files.readString(schemaPath, StandardCharsets.UTF_8)
-          : null;
+      schemaString = Files.readString(schemaPath, StandardCharsets.UTF_8);
     } catch (Exception ex) {
       throw new SchemaRegistryManagerException("Failed to read schema file " + schemaPath, ex);
     }
@@ -163,40 +146,33 @@ public class SchemaRegistryManager {
 
   public ParsedSchema parseSchema(String schemaType, String schemaString) {
     Optional<String> schemaStringOpt =
-        Optional
-            .ofNullable(schemaString)
-            .map(String::trim)
-            .filter(Predicate.not(String::isEmpty));
+        Optional.ofNullable(schemaString).map(String::trim).filter(Predicate.not(String::isEmpty));
 
     try {
       log.debug(
           "Parsing schema of type [{}] length [{}]",
           schemaType,
-          schemaStringOpt.map(String::length).orElse(-1)
-      );
+          schemaStringOpt.map(String::length).orElse(-1));
 
       return schemaStringOpt
-          .flatMap(schemaString_ -> schemaRegistryClient.parseSchema(
-              schemaType,
-              schemaString_,
-              Collections.emptyList()
-          ))
-          .orElseThrow(() -> new SchemaRegistryManagerException(String.format(
-              "Failed to parse schema of type [%s] length [%d]",
-              schemaType,
-              schemaStringOpt.map(String::length).orElse(-1)
-          )));
+          .flatMap(
+              schemaString_ ->
+                  schemaRegistryClient.parseSchema(
+                      schemaType, schemaString_, Collections.emptyList()))
+          .orElseThrow(
+              () ->
+                  new SchemaRegistryManagerException(
+                      String.format(
+                          "Failed to parse schema of type [%s] length [%d]",
+                          schemaType, schemaStringOpt.map(String::length).orElse(-1))));
     } catch (SchemaRegistryManagerException ex) {
       throw ex;
     } catch (Exception ex) {
       throw new SchemaRegistryManagerException(
           String.format(
               "Failed to parse schema of type [%s] length [%d]",
-              schemaType,
-              schemaStringOpt.map(String::length).orElse(-1)
-          ),
-          ex
-      );
+              schemaType, schemaStringOpt.map(String::length).orElse(-1)),
+          ex);
     }
   }
 }

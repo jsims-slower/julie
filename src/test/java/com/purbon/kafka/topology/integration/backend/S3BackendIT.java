@@ -5,6 +5,7 @@ import static com.purbon.kafka.topology.Constants.JULIE_S3_BUCKET;
 import static com.purbon.kafka.topology.Constants.JULIE_S3_ENDPOINT;
 import static com.purbon.kafka.topology.Constants.JULIE_S3_REGION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.AnonymousAWSCredentials;
@@ -93,7 +94,7 @@ public class S3BackendIT {
     newBackend.configure(config, true);
 
     BackendState newState = newBackend.load();
-    assertThat(newState.size()).isEqualTo(1);
+    assertEquals(1, newState.size());
     assertThat(newState.getBindings()).contains(binding);
   }
 }

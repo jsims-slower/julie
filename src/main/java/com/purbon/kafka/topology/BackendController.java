@@ -12,9 +12,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class BackendController {
 
   public static final String STATE_FILE_NAME = ".cluster-state";
@@ -24,7 +24,6 @@ public class BackendController {
     APPEND
   }
 
-  private static final Logger LOGGER = LogManager.getLogger(BackendController.class);
   @Getter private final Backend backend;
   @Getter private BackendState state;
 
@@ -38,32 +37,32 @@ public class BackendController {
   }
 
   public void addBindings(List<TopologyAclBinding> bindings) {
-    LOGGER.debug(String.format("Adding bindings %s to the backend", bindings));
+    log.debug("Adding bindings {} to the backend", bindings);
     state.addBindings(bindings);
   }
 
   public void addTopics(Set<String> topics) {
-    LOGGER.debug(String.format("Adding topics %s to the backend", topics));
+    log.debug("Adding topics {} to the backend", topics);
     state.addTopics(topics);
   }
 
   public void addServiceAccounts(Set<ServiceAccount> serviceAccounts) {
-    LOGGER.debug(String.format("Adding Service Accounts %s to the backend", serviceAccounts));
+    log.debug("Adding Service Accounts {} to the backend", serviceAccounts);
     state.addAccounts(serviceAccounts);
   }
 
   public void addConnectors(Set<KafkaConnectArtefact> connectors) {
-    LOGGER.debug(String.format("Adding Connectors %s to the backend", connectors));
+    log.debug("Adding Connectors {} to the backend", connectors);
     state.addConnectors(connectors);
   }
 
   public void addKSqlStreams(Set<KsqlStreamArtefact> ksqlStreams) {
-    LOGGER.debug(String.format("Adding KSQL Streams %s to the backend", ksqlStreams));
+    log.debug("Adding KSQL Streams {} to the backend", ksqlStreams);
     state.addKSqlStreams(ksqlStreams);
   }
 
   public void addKSqlTables(Set<KsqlTableArtefact> ksqlTable) {
-    LOGGER.debug(String.format("Adding KSQL Table %s to the backend", ksqlTable));
+    log.debug("Adding KSQL Table {} to the backend", ksqlTable);
     state.addKSqlTables(ksqlTable);
   }
 
@@ -92,20 +91,20 @@ public class BackendController {
   }
 
   public void flushAndClose() throws IOException {
-    LOGGER.debug(String.format("Flush data from the backend at %s", backend.getClass()));
+    log.debug("Flush data from the backend at {}", backend.getClass());
     backend.createOrOpen(Mode.TRUNCATE);
     backend.save(state);
     backend.close();
   }
 
   public void load() throws IOException {
-    LOGGER.debug(String.format("Loading data from the backend at %s", backend.getClass()));
+    log.debug("Loading data from the backend at {}", backend.getClass());
     backend.createOrOpen();
     state = backend.load();
   }
 
   public void reset() {
-    LOGGER.debug("Reset the bindings cache");
+    log.debug("Reset the bindings cache");
     state.clear();
   }
 

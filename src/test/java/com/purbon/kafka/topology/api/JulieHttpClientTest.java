@@ -5,7 +5,7 @@ import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static com.purbon.kafka.topology.CommandLineInterface.BROKERS_OPTION;
 import static com.purbon.kafka.topology.Constants.JULIE_HTTP_BACKOFF_TIME_MS;
 import static com.purbon.kafka.topology.Constants.JULIE_HTTP_RETRY_TIMES;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.purbon.kafka.topology.Configuration;

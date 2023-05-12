@@ -190,9 +190,11 @@ public class JulieOps implements AutoCloseable {
       throws IOException {
     ExecutionPlan plan = ExecutionPlan.init(backendController, printStream, auditor);
     LOGGER.debug(
-        String.format(
-            "Running topology builder with topicManager=[%s], accessControlManager=[%s], dryRun=[%s], isQuiet=[%s]",
-            topicManager, accessControlManager, config.isDryRun(), config.isQuiet()));
+        "Running topology builder with topicManager=[{}], accessControlManager=[{}], dryRun=[{}], isQuiet=[{}]",
+        topicManager,
+        accessControlManager,
+        config.isDryRun(),
+        config.isQuiet());
 
     // Create users should always be first, so user exists when making acl link
     for (Topology topology : topologies.values()) {

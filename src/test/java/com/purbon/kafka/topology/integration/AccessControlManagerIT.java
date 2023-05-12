@@ -4,6 +4,7 @@ import static com.purbon.kafka.topology.CommandLineInterface.*;
 import static com.purbon.kafka.topology.Constants.*;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
@@ -520,7 +521,7 @@ public class AccessControlManagerIT {
     Collection<AclBinding> acls =
         kafkaAdminClient.describeAcls(AclBindingFilter.ANY).values().get();
 
-    assertEquals(size, acls.size());
+    assertThat(acls).hasSize(size);
   }
 
   private void verifyConnectAcls(Connector connector)
@@ -537,7 +538,7 @@ public class AccessControlManagerIT {
 
     Collection<AclBinding> acls = kafkaAdminClient.describeAcls(filter).values().get();
 
-    assertEquals(5, acls.size());
+    assertThat(acls).hasSize(5);
 
     entryFilter =
         new AccessControlEntryFilter(
@@ -545,7 +546,7 @@ public class AccessControlManagerIT {
     filter = new AclBindingFilter(resourceFilter, entryFilter);
     acls = kafkaAdminClient.describeAcls(filter).values().get();
 
-    assertEquals(3, acls.size());
+    assertThat(acls).hasSize(3);
 
     resourceFilter = new ResourcePatternFilter(ResourceType.GROUP, null, PatternType.ANY);
     entryFilter =
@@ -554,7 +555,7 @@ public class AccessControlManagerIT {
     filter = new AclBindingFilter(resourceFilter, entryFilter);
     acls = kafkaAdminClient.describeAcls(filter).values().get();
 
-    assertEquals(1, acls.size());
+    assertThat(acls).hasSize(1);
   }
 
   private void verifySchemaRegistryAcls(Platform platform)
@@ -584,8 +585,8 @@ public class AccessControlManagerIT {
 
       Collection<AclBinding> groupAcls = kafkaAdminClient.describeAcls(groupFilter).values().get();
 
-      assertEquals(6, acls.size());
-      assertEquals(1, groupAcls.size());
+      assertThat(acls).hasSize(6);
+      assertThat(groupAcls).hasSize(1);
     }
   }
 
@@ -606,7 +607,7 @@ public class AccessControlManagerIT {
 
       Collection<AclBinding> acls = kafkaAdminClient.describeAcls(filter).values().get();
 
-      assertEquals(17, acls.size());
+      assertThat(acls).hasSize(17);
     }
   }
 
@@ -622,7 +623,7 @@ public class AccessControlManagerIT {
     Collection<AclBinding> acls = kafkaAdminClient.describeAcls(filter).values().get();
 
     // two acls created for the write topics
-    assertEquals(2, acls.size());
+    assertThat(acls).hasSize(2);
 
     entryFilter =
         new AccessControlEntryFilter(
@@ -633,7 +634,7 @@ public class AccessControlManagerIT {
     acls = kafkaAdminClient.describeAcls(filter).values().get();
 
     // two acls created for the read topics
-    assertEquals(3, acls.size());
+    assertThat(acls).hasSize(3);
 
     entryFilter =
         new AccessControlEntryFilter(
@@ -644,7 +645,7 @@ public class AccessControlManagerIT {
     acls = kafkaAdminClient.describeAcls(filter).values().get();
 
     // 1 acls created for the prefix internal topics
-    assertEquals(1, acls.size());
+    assertThat(acls).hasSize(1);
   }
 
   private void verifyKSqlAppAcls(KSqlApp app) throws ExecutionException, InterruptedException {
@@ -659,7 +660,7 @@ public class AccessControlManagerIT {
     Collection<AclBinding> acls = kafkaAdminClient.describeAcls(filter).values().get();
 
     // two acls created for the write topics
-    assertEquals(2, acls.size());
+    assertThat(acls).hasSize(2);
 
     entryFilter =
         new AccessControlEntryFilter(
@@ -670,7 +671,7 @@ public class AccessControlManagerIT {
     acls = kafkaAdminClient.describeAcls(filter).values().get();
 
     // two acls created for the read topics
-    assertEquals(2, acls.size());
+    assertThat(acls).hasSize(2);
 
     entryFilter =
         new AccessControlEntryFilter(
@@ -681,7 +682,7 @@ public class AccessControlManagerIT {
     acls = kafkaAdminClient.describeAcls(filter).values().get();
 
     // 1 acls created for the prefix internal topics
-    assertEquals(2, acls.size());
+    assertThat(acls).hasSize(2);
   }
 
   private void verifyProducerAcls(List<Producer> producers, int aclsCount)
@@ -696,22 +697,22 @@ public class AccessControlManagerIT {
       AclBindingFilter filter = new AclBindingFilter(resourceFilter, entryFilter);
       Collection<AclBinding> acls = kafkaAdminClient.describeAcls(filter).values().get();
 
-      assertEquals(aclsCount, acls.size());
+      assertThat(acls).hasSize(aclsCount);
 
       List<ResourceType> types =
           acls.stream()
               .map(aclBinding -> aclBinding.pattern().resourceType())
               .collect(Collectors.toList());
 
-      Assert.assertTrue(types.contains(ResourceType.TOPIC));
+      assertThat(types).contains(ResourceType.TOPIC);
 
       List<AclOperation> ops =
           acls.stream()
               .map(aclsBinding -> aclsBinding.entry().operation())
               .collect(Collectors.toList());
 
-      Assert.assertTrue(ops.contains(AclOperation.DESCRIBE));
-      Assert.assertTrue(ops.contains(AclOperation.WRITE));
+      assertThat(ops).contains(AclOperation.DESCRIBE);
+      assertThat(ops).contains(AclOperation.WRITE);
     }
   }
 
@@ -727,23 +728,23 @@ public class AccessControlManagerIT {
       AclBindingFilter filter = new AclBindingFilter(resourceFilter, entryFilter);
       Collection<AclBinding> acls = kafkaAdminClient.describeAcls(filter).values().get();
 
-      assertEquals(3, acls.size());
+      assertThat(acls).hasSize(3);
 
       List<ResourceType> types =
           acls.stream()
               .map(aclBinding -> aclBinding.pattern().resourceType())
               .collect(Collectors.toList());
 
-      Assert.assertTrue(types.contains(ResourceType.GROUP));
-      Assert.assertTrue(types.contains(ResourceType.TOPIC));
+      assertThat(types).contains(ResourceType.GROUP);
+      assertThat(types).contains(ResourceType.TOPIC);
 
       List<AclOperation> ops =
           acls.stream()
               .map(aclsBinding -> aclsBinding.entry().operation())
               .collect(Collectors.toList());
 
-      Assert.assertTrue(ops.contains(AclOperation.DESCRIBE));
-      Assert.assertTrue(ops.contains(AclOperation.READ));
+      assertThat(ops).contains(AclOperation.DESCRIBE);
+      assertThat(ops).contains(AclOperation.READ);
     }
   }
 }

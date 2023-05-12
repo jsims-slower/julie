@@ -4,9 +4,7 @@ import static com.purbon.kafka.topology.roles.rbac.RBACBindingsBuilder.LITERAL;
 import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.DEVELOPER_READ;
 import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.RESOURCE_OWNER;
 import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.SECURITY_ADMIN;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.purbon.kafka.topology.api.mds.AuthenticationCredentials;
 import com.purbon.kafka.topology.api.mds.MDSApiClient;
@@ -16,8 +14,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("Zookeeper issues")
 public class MDSApiClientRbacIT extends MDSBaseTest {
 
   private final String mdsUser = "professor";
@@ -37,7 +37,7 @@ public class MDSApiClientRbacIT extends MDSBaseTest {
     apiClient.setBasicAuth(new BasicAuth(mdsUser, mdsPassword));
     apiClient.authenticate();
     AuthenticationCredentials credentials = apiClient.getCredentials();
-    assertFalse(credentials.getAuthToken().isEmpty());
+    assertThat(credentials.getAuthToken()).isNotEmpty();
   }
 
   @Test(expected = IOException.class)
@@ -53,7 +53,7 @@ public class MDSApiClientRbacIT extends MDSBaseTest {
     apiClient.setKafkaClusterId(getKafkaClusterID());
 
     List<String> roles = apiClient.lookupRoles("User:fry");
-    assertTrue(roles.contains(DEVELOPER_READ));
+    assertThat(roles).contains(DEVELOPER_READ);
   }
 
   @Test
@@ -68,8 +68,7 @@ public class MDSApiClientRbacIT extends MDSBaseTest {
     apiClient.bindRequest(binding);
 
     List<String> roles = apiClient.lookupRoles("User:fry");
-    assertEquals(1, roles.size());
-    assertTrue(roles.contains(DEVELOPER_READ));
+    assertThat(roles).containsOnly(DEVELOPER_READ);
   }
 
   @Test(expected = IOException.class)
@@ -99,8 +98,7 @@ public class MDSApiClientRbacIT extends MDSBaseTest {
         apiClient.withClusterIDs().forKafka().forSchemaRegistry().asMap();
 
     List<String> roles = apiClient.lookupRoles(principal, clusters);
-    assertEquals(1, roles.size());
-    assertTrue(roles.contains(SECURITY_ADMIN));
+    assertThat(roles).containsOnly(SECURITY_ADMIN);
   }
 
   @Test
@@ -125,8 +123,7 @@ public class MDSApiClientRbacIT extends MDSBaseTest {
         apiClient.withClusterIDs().forKafka().forSchemaRegistry().asMap();
 
     List<String> roles = apiClient.lookupRoles(principal, clusters);
-    assertEquals(1, roles.size());
-    assertTrue(roles.contains(DEVELOPER_READ));
+    assertThat(roles).containsOnly(DEVELOPER_READ);
   }
 
   @Test
@@ -141,7 +138,6 @@ public class MDSApiClientRbacIT extends MDSBaseTest {
     apiClient.bindRequest(binding);
 
     List<String> roles = apiClient.lookupRoles(principal);
-    assertEquals(1, roles.size());
-    assertTrue(roles.contains(RESOURCE_OWNER));
+    assertThat(roles).containsOnly(RESOURCE_OWNER);
   }
 }

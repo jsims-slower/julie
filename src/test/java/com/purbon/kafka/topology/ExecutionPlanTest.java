@@ -62,7 +62,7 @@ public class ExecutionPlanTest {
     TopologyAclBinding binding2 =
         new TopologyAclBinding(
             ResourceType.ANY.name(), "topicB", "*", "ALL", "User:foo", "LITERAL");
-    Set<TopologyAclBinding> bindings = new HashSet<>(Arrays.asList(binding1, binding2));
+    Set<TopologyAclBinding> bindings = Set.of(binding1, binding2);
     CreateBindings addBindingsAction = new CreateBindings(aclsProvider, bindings);
 
     plan.add(addBindingsAction);
@@ -81,7 +81,7 @@ public class ExecutionPlanTest {
     TopologyAclBinding binding2 =
         new TopologyAclBinding(
             ResourceType.ANY.name(), "topicB", "*", "ALL", "User:foo", "LITERAL");
-    Set<TopologyAclBinding> bindings = new HashSet<>(Arrays.asList(binding1, binding2));
+    Set<TopologyAclBinding> bindings = Set.of(binding1, binding2);
     CreateBindings addBindingsAction = new CreateBindings(aclsProvider, bindings);
 
     plan.add(addBindingsAction);

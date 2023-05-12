@@ -2,6 +2,7 @@ package com.purbon.kafka.topology;
 
 import static com.purbon.kafka.topology.CommandLineInterface.*;
 import static com.purbon.kafka.topology.Constants.*;
+import static org.junit.Assert.*;
 
 import com.purbon.kafka.topology.model.Impl.ProjectImpl;
 import com.purbon.kafka.topology.model.Impl.TopologyImpl;
@@ -13,7 +14,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,7 +35,7 @@ public class TopicTest {
     Topic topic = new Topic("topic");
     topic.setProjectPrefix(project.namePrefix());
     String fullName = topic.toString();
-    Assert.assertEquals("team.project.topic", fullName);
+    assertEquals("team.project.topic", fullName);
   }
 
   @Test
@@ -55,7 +55,7 @@ public class TopicTest {
     Topic topic = new Topic("topic");
     project.addTopic(topic);
     String fullName = topic.toString();
-    Assert.assertEquals("team.other.another.project.topic", fullName);
+    assertEquals("team.other.another.project.topic", fullName);
   }
 
   @Test
@@ -63,7 +63,7 @@ public class TopicTest {
     Topic topic = new Topic("topic", "type");
     topic.setProjectPrefix(project.namePrefix());
     String fullName = topic.toString();
-    Assert.assertEquals("team.project.topic.type", fullName);
+    assertEquals("team.project.topic.type", fullName);
   }
 
   @Test
@@ -90,7 +90,7 @@ public class TopicTest {
     project.addTopic(topic);
 
     String fullName = topic.toString();
-    Assert.assertEquals("team_other_another_project_topic", fullName);
+    assertEquals("team_other_another_project_topic", fullName);
   }
 
   @Test
@@ -117,6 +117,6 @@ public class TopicTest {
     project.addTopic(topic);
 
     String fullName = topic.toString();
-    Assert.assertEquals("other.team.project.topic", fullName);
+    assertEquals("other.team.project.topic", fullName);
   }
 }

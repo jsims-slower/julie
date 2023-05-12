@@ -7,12 +7,10 @@ import com.purbon.kafka.topology.model.Artefact;
 import com.purbon.kafka.topology.utils.Utils;
 import java.io.IOException;
 import java.util.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class SyncArtefactAction extends BaseAction {
-
-  private static final Logger LOGGER = LogManager.getLogger(SyncArtefactAction.class);
 
   private final ArtefactClient client;
   private final Artefact artefact;
@@ -26,8 +24,7 @@ public class SyncArtefactAction extends BaseAction {
 
   @Override
   public void run() throws IOException {
-    LOGGER.info(
-        String.format("Updating artefact %s for client %s", artefact.getName(), client.getClass()));
+    log.info("Updating artefact {} for client {}", artefact.getName(), client.getClass());
     client.update(artefact.getName(), content());
   }
 
@@ -36,8 +33,7 @@ public class SyncArtefactAction extends BaseAction {
   }
 
   private String content() throws IOException {
-    LOGGER.debug(
-        "Reading artefact content from " + artefact.getPath() + " with rootPath " + rootPath);
+    log.debug("Reading artefact content from {} with rootPath {}", artefact.getPath(), rootPath);
     return Utils.readFullFile(filePath(artefact.getPath(), rootPath));
   }
 

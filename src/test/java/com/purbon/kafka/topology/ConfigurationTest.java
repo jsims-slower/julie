@@ -172,8 +172,7 @@ public class ConfigurationTest {
     cliOps.put(CLIENT_CONFIG_OPTION, clientConfigFile);
 
     Configuration config = Configuration.build(cliOps);
-    assertThat(config.getKafkaInternalTopicPrefixes())
-        .isEqualTo(Arrays.asList("_", "topicA", "topicB"));
+    assertThat(config.getKafkaInternalTopicPrefixes()).containsExactly("_", "topicA", "topicB");
   }
 
   @Test

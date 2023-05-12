@@ -31,16 +31,15 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TopicCustomDeserializer extends StdDeserializer<Topic> {
 
-  private static final Logger LOGGER = LogManager.getLogger(TopicCustomDeserializer.class);
   private final Configuration config;
-  private PlanMap plans;
+  private final PlanMap plans;
 
-  private List<String> validSchemaKeys =
+  private final List<String> validSchemaKeys =
       Arrays.asList(
           "key.schema.file",
           "value.schema.file",
@@ -115,9 +114,8 @@ public class TopicCustomDeserializer extends StdDeserializer<Topic> {
 
       List<ValidationException> errors =
           listOfResultsOrErrors.stream()
-              .filter(Either::isLeft)
               .map(Either::getLeft)
-              .map(Optional::get)
+              .flatMap(Optional::stream)
               .collect(Collectors.toList());
       if (errors.size() > 0) {
         throw new IOException(errors.get(0));
@@ -125,9 +123,8 @@ public class TopicCustomDeserializer extends StdDeserializer<Topic> {
 
       schemas =
           listOfResultsOrErrors.stream()
-              .filter(Either::isRight)
               .map(Either::getRight)
-              .map(Optional::get)
+              .flatMap(Optional::stream)
               .collect(Collectors.toList());
     }
 
@@ -142,8 +139,7 @@ public class TopicCustomDeserializer extends StdDeserializer<Topic> {
     Map<String, String> metadata = getMap(rootNode.get("metadata"));
     topic.setMetadata(metadata);
 
-    LOGGER.debug(
-        String.format("Topic %s with config %s has been created", topic.getName(), config));
+    log.debug("Topic {} with config {} has been created", topic.getName(), config);
     return topic;
   }
 

@@ -8,32 +8,24 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+@RequiredArgsConstructor
 public class DeleteArtefactAction extends BaseAction {
 
-  private static final Logger LOGGER = LogManager.getLogger(DeleteArtefactAction.class);
-
-  private ArtefactClient client;
-  private Artefact artefact;
-
-  public DeleteArtefactAction(ArtefactClient client, Artefact artefact) {
-    this.client = client;
-    this.artefact = artefact;
-  }
+  private final ArtefactClient client;
+  private final Artefact artefact;
 
   @Override
   public void run() throws IOException {
-    LOGGER.debug(
-        String.format(
-            "Deleting artefact %s with client %s", artefact.getName(), client.getClass()));
+    log.debug("Deleting artefact {} with client {}", artefact.getName(), client.getClass());
 
     if (artefact.getClass().isAnnotationPresent(TypeArtefact.class)) {
       TypeArtefact annon = artefact.getClass().getAnnotation(TypeArtefact.class);
-      LOGGER.debug("Deleting artefact with type " + annon.name());
+      log.debug("Deleting artefact with type {}", annon.name());
       client.delete(artefact.getName(), annon.name());
-
     } else {
       client.delete(artefact.getName());
     }

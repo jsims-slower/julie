@@ -14,12 +14,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 abstract class AbstractPrincipalManager implements ExecutionPlanUpdater {
 
-  private static final Logger LOGGER = LogManager.getLogger(AbstractPrincipalManager.class);
   private final List<String> managedPrefixes;
   protected PrincipalProvider provider;
   protected Configuration config;
@@ -34,7 +33,7 @@ abstract class AbstractPrincipalManager implements ExecutionPlanUpdater {
   public final void updatePlan(ExecutionPlan plan, Map<String, Topology> topologies)
       throws IOException {
     if (!config.enabledPrincipalManagement()) {
-      LOGGER.debug(
+      log.debug(
           "Not running the PrincipalsManager as this is feature is not enabled by default, please enable if required.");
       return;
     }
@@ -72,8 +71,7 @@ abstract class AbstractPrincipalManager implements ExecutionPlanUpdater {
   private boolean matchesPrefixList(String principal) {
     boolean matches =
         managedPrefixes.size() == 0 || managedPrefixes.stream().anyMatch(principal::startsWith);
-    LOGGER.debug(
-        String.format("Principal %s matches %s with $s", principal, matches, managedPrefixes));
+    log.debug("Principal {} matches {} with {}", principal, matches, managedPrefixes);
     return matches;
   }
 

@@ -1,22 +1,17 @@
 package com.purbon.kafka.topology.actions.topics;
 
 import com.purbon.kafka.topology.model.Topic;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.extern.log4j.Log4j2;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ConfigEntry;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-@Getter
-@Setter
-@Log4j2
-@RequiredArgsConstructor
+@Data
+@Slf4j
 public class TopicConfigUpdatePlan {
 
   private final Topic topic;
@@ -67,14 +62,14 @@ public class TopicConfigUpdatePlan {
         (configKey, configValue) -> {
           ConfigEntry currentConfigEntry = currentKafkaConfigs.get(configKey);
           log.debug(
-              String.format(
-                  "addNewOrUpdatedConfigs compare: currentConfigEntryValue = %s and configValue = %s",
-                  currentConfigEntry.value(), configValue));
+              "addNewOrUpdatedConfigs compare: currentConfigEntryValue = {} and configValue = {}",
+              currentConfigEntry.value(),
+              configValue);
           if (!currentConfigEntry.value().equals(configValue)) {
             log.debug(
-                String.format(
-                    "addNewOrUpdatedConfigs detected as different: currentConfigEntryValue = %s and configValue = %s",
-                    currentConfigEntry.value(), configValue));
+                "addNewOrUpdatedConfigs detected as different: currentConfigEntryValue = {} and configValue = {}",
+                currentConfigEntry.value(),
+                configValue);
             if (isDynamicTopicConfig(currentConfigEntry)) {
               addConfigToUpdate(configKey, currentConfigEntry.value(), configValue);
             } else {

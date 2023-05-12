@@ -10,12 +10,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public abstract class BaseAccessControlAction extends BaseAction {
-
-  private static final Logger LOGGER = LogManager.getLogger(BaseAccessControlAction.class);
 
   protected Collection<TopologyAclBinding> aclBindings;
 
@@ -29,7 +27,7 @@ public abstract class BaseAccessControlAction extends BaseAction {
 
   @Override
   public void run() throws IOException {
-    LOGGER.debug(String.format("Running Action %s", getClass()));
+    log.debug("Running Action {}", getClass());
     execute();
     if (!getAclBindings().isEmpty()) logResults();
   }
@@ -40,7 +38,7 @@ public abstract class BaseAccessControlAction extends BaseAction {
             .filter(Objects::nonNull)
             .map(TopologyAclBinding::toString)
             .collect(Collectors.toList());
-    LOGGER.debug(String.format("Bindings created %s", String.join("\n", bindingsAsList)));
+    log.debug("Bindings created {}", bindingsAsList);
   }
 
   protected abstract void execute() throws IOException;

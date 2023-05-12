@@ -1,6 +1,6 @@
 package com.purbon.kafka.topology;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.purbon.kafka.topology.model.Plan;
@@ -10,7 +10,6 @@ import com.purbon.kafka.topology.utils.TestUtils;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.assertj.core.api.Condition;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,7 +48,7 @@ public class PlanMapSerdesTest {
   public void testHappyDeserialization() throws IOException {
     PlanMap plans = parser.deserialise(TestUtils.getResourceFile("/plans.yaml"));
 
-    assertThat(plans).has(new Condition<>(list -> list.size() == 2, "Contains two elements"));
+    assertThat(plans).describedAs("Contains two elements").returns(2, PlanMap::size);
     assertThat(plans.get("gold").getAlias()).isEqualTo("gold");
 
     Map<String, String> config = new HashMap<>();

@@ -3,6 +3,7 @@ package com.purbon.kafka.topology.integration.backend;
 import static com.purbon.kafka.topology.CommandLineInterface.BROKERS_OPTION;
 import static com.purbon.kafka.topology.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import com.purbon.kafka.topology.BackendController;
 import com.purbon.kafka.topology.Configuration;
@@ -111,7 +112,7 @@ public class RedisBackendIT {
 
     List<String> topics = Arrays.asList("foo", "bar");
     var connector = new KafkaConnectArtefact("path", "label", "name", "some-hash");
-    List<KafkaConnectArtefact> connectors = Arrays.asList(connector);
+    List<KafkaConnectArtefact> connectors = Collections.singletonList(connector);
     BackendState state = new BackendState();
     state.addTopics(topics);
     state.addBindings(Collections.singleton(binding));
@@ -121,12 +122,12 @@ public class RedisBackendIT {
 
     BackendState recoveredState = rsp.load();
 
-    Assert.assertEquals(2, recoveredState.getTopics().size());
+    assertThat(recoveredState.getTopics()).hasSize(2);
     assertThat(state.getTopics()).contains("foo", "bar");
     assertThat(state.getConnectors()).hasSize(1);
     assertThat(state.getConnectors()).contains(connector);
-    Assert.assertEquals(1, recoveredState.getBindings().size());
-    Assert.assertEquals(
+    assertThat(recoveredState.getBindings()).hasSize(1);
+    assertEquals(
         binding.getPrincipal(), recoveredState.getBindings().iterator().next().getPrincipal());
   }
 

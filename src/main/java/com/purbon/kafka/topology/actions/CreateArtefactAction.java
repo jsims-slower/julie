@@ -11,12 +11,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class CreateArtefactAction extends BaseAction {
-
-  private static final Logger LOGGER = LogManager.getLogger(CreateArtefactAction.class);
 
   private final ArtefactClient client;
   private final Artefact artefact;
@@ -37,9 +35,7 @@ public class CreateArtefactAction extends BaseAction {
   @Override
   public void run() throws IOException {
     if (!artefacts.contains(artefact)) {
-      LOGGER.info(
-          String.format(
-              "Creating artefact %s for client %s", artefact.getName(), client.getClass()));
+      log.info("Creating artefact {} for client {}", artefact.getName(), client.getClass());
       client.add(artefact.getName(), content());
     }
   }
@@ -49,8 +45,7 @@ public class CreateArtefactAction extends BaseAction {
   }
 
   private String content() throws IOException {
-    LOGGER.debug(
-        "Reading artefact content from " + artefact.getPath() + " with rootPath " + rootPath);
+    log.debug("Reading artefact content from {} with rootPath {}", artefact.getPath(), rootPath);
     return Utils.readFullFile(filePath(artefact.getPath(), rootPath));
   }
 

@@ -3,47 +3,43 @@ package com.purbon.kafka.topology.validation.topic;
 import com.purbon.kafka.topology.exceptions.ValidationException;
 import com.purbon.kafka.topology.model.Topic;
 import com.purbon.kafka.topology.validation.TopicValidation;
-import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.config.TopicConfig;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This validation checks that all topic configs are valid ones according to the TopicConfig class.
  */
+@Slf4j
 public class ConfigurationKeyValidation implements TopicValidation {
 
-  private static final Logger LOGGER = LogManager.getLogger(ConfigurationKeyValidation.class);
+  public static final Set<String> allowedConfigKeys =
+      Arrays.stream(TopicConfig.class.getDeclaredFields())
+          .filter(field -> Modifier.isStatic(field.getModifiers()))
+          .filter(field -> field.getType().isAssignableFrom(String.class))
+          .map(
+              field -> {
+                try {
+                  return field.get(null);
+                } catch (IllegalAccessException ex) {
+                  throw new RuntimeException(ex);
+                }
+              })
+          .map(String.class::cast)
+          .collect(Collectors.toSet());
 
   @Override
   public void valid(Topic topic) throws ValidationException {
-    Field[] fields = TopicConfig.class.getDeclaredFields();
-    TopicConfig topicConfig = new TopicConfig();
-    Map<String, String> topicConfigMap = getTopicConfig(topic);
-    for (Map.Entry<String, String> entry : topicConfigMap.entrySet()) {
-      boolean match =
-          Arrays.stream(fields)
-              .anyMatch(
-                  field -> {
-                    try {
-                      return ((String) field.get(topicConfig)).contains(entry.getKey());
-                    } catch (IllegalAccessException e) {
-                      LOGGER.error(e);
-                      return false;
-                    }
-                  });
-      if (!match) {
-        String msg =
-            String.format("Topic %s has an invalid configuration value: %s", topic, entry.getKey());
-        throw new ValidationException(msg);
-      }
+    // TODO: is topic.clone() necessary?
+    Set<String> configuredKeys = new HashSet<>(topic.clone().getRawConfig().keySet());
+    configuredKeys.removeAll(allowedConfigKeys);
+    for (String invalidKey : configuredKeys) {
+      throw new ValidationException(
+          String.format("Topic %s has an invalid configuration value: %s", topic, invalidKey));
     }
-  }
-
-  private Map<String, String> getTopicConfig(Topic topic) {
-    Topic clonedTopic = ((Topic) topic).clone();
-    return clonedTopic.getRawConfig();
   }
 }

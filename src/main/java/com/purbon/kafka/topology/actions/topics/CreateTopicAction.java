@@ -3,23 +3,23 @@ package com.purbon.kafka.topology.actions.topics;
 import com.purbon.kafka.topology.actions.BaseAction;
 import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
 import com.purbon.kafka.topology.model.Topic;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-@Log4j2
+@Slf4j
 @RequiredArgsConstructor
 public class CreateTopicAction extends BaseAction {
 
   private final TopologyBuilderAdminClient adminClient;
   private final Topic topic;
-  private final String fullTopicName;
-
-  public String getTopic() {
-    return fullTopicName;
-  }
+  @Getter private final String fullTopicName;
 
   @Override
   public void run() throws IOException {
@@ -27,7 +27,7 @@ public class CreateTopicAction extends BaseAction {
   }
 
   private void createTopic(Topic topic, String fullTopicName) throws IOException {
-    log.debug(String.format("Create new topic with name %s", fullTopicName));
+    log.debug("Create new topic with name {}", fullTopicName);
     adminClient.createTopic(topic, fullTopicName);
   }
 
