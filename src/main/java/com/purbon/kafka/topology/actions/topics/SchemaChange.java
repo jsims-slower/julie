@@ -18,9 +18,9 @@ final class SchemaChange {
   private final SchemaRegistryManager schemaRegistryManager;
   private final Subject subject;
   @Getter private final String subjectName;
-  private final Integer schemaId;
   private final ParsedSchema parsedSchema;
-  private final CompatibilityLevel oldCompatibility;
+  private final Integer schemaId;
+  private final CompatibilityLevel currentCompatibility;
 
   public SchemaChange(
       SchemaRegistryManager schemaRegistryManager,
@@ -31,8 +31,8 @@ final class SchemaChange {
         schemaRegistryManager,
         subject,
         subjectName,
-        schemaRegistryManager.getId(subjectName, parsedSchema),
         parsedSchema,
+        schemaRegistryManager.getId(subjectName, parsedSchema),
         schemaRegistryManager.getCompatibility(subjectName));
   }
 
@@ -65,7 +65,7 @@ final class SchemaChange {
   private boolean hasCompatibilityChanged() {
     return subject
         .getOptionalCompatibility()
-        .filter(compatibility -> compatibility != oldCompatibility)
+        .filter(compatibility -> compatibility != currentCompatibility)
         .isPresent();
   }
 

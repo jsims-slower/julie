@@ -82,10 +82,10 @@ public class SchemaRegistryManager {
     }
   }
 
-  public CompatibilityLevel setCompatibility(String subject, CompatibilityLevel compatibility) {
+  public CompatibilityLevel setCompatibility(String subjectName, CompatibilityLevel compatibility) {
     try {
       return Optional.ofNullable(
-              schemaRegistryClient.updateCompatibility(subject, compatibility.name()))
+              schemaRegistryClient.updateCompatibility(subjectName, compatibility.name()))
           .map(String::trim)
           .filter(Predicate.not(String::isEmpty))
           .map(String::toUpperCase)
@@ -95,14 +95,16 @@ public class SchemaRegistryManager {
       final String msg =
           String.format(
               "Failed to register the schema compatibility mode '%s' for subject '%s'",
-              compatibility.name(), subject);
+              compatibility.name(), subjectName);
       throw new SchemaRegistryManagerException(msg, e);
     }
   }
 
-  public CompatibilityLevel getCompatibility(String subject) {
+  public CompatibilityLevel getCompatibility(String subjectName) {
+    log.debug("Looking up compatibility based on subject [{}]", subjectName);
+
     try {
-      return Optional.ofNullable(schemaRegistryClient.getCompatibility(subject))
+      return Optional.ofNullable(schemaRegistryClient.getCompatibility(subjectName))
           .map(String::trim)
           .filter(Predicate.not(String::isEmpty))
           .map(String::toUpperCase)
@@ -111,11 +113,11 @@ public class SchemaRegistryManager {
     } catch (RestClientException rce) {
       if (NOT_FOUND_ERROR_CODES.contains(rce.getErrorCode())) return null;
       final String msg =
-          String.format("Failed to get schema compatibility mode for subject '%s'", subject);
+          String.format("Failed to get schema compatibility mode for subject '%s'", subjectName);
       throw new SchemaRegistryManagerException(msg, rce);
     } catch (Exception ex) {
       final String msg =
-          String.format("Failed to get schema compatibility mode for subject '%s'", subject);
+          String.format("Failed to get schema compatibility mode for subject '%s'", subjectName);
       throw new SchemaRegistryManagerException(msg, ex);
     }
   }
