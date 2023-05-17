@@ -3,6 +3,7 @@ package com.purbon.kafka.topology.integration;
 import static com.purbon.kafka.topology.CommandLineInterface.*;
 import static com.purbon.kafka.topology.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.BackendController;
 import com.purbon.kafka.topology.Configuration;
@@ -18,37 +19,31 @@ import com.purbon.kafka.topology.serdes.TopologySerdes;
 import com.purbon.kafka.topology.utils.TestUtils;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class KsqlManagerIT {
 
-  static SaslPlaintextKafkaContainer container;
-  static KsqlContainer ksqlContainer;
+  @Container
+  private static final SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
+
+  @Container private static final KsqlContainer ksqlContainer = new KsqlContainer(container);
+
   private TopologySerdes parser;
   private KsqlApiClient client;
   private ExecutionPlan plan;
 
-  @After
-  public void after() {
-    ksqlContainer.stop();
-    container.stop();
-  }
-
-  @Before
+  @BeforeEach
   public void configure() throws IOException {
-    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
-    container.start();
-    ksqlContainer = new KsqlContainer(container);
-    ksqlContainer.start();
 
-    Files.deleteIfExists(Paths.get(".cluster-state"));
+    TestUtils.deleteStateFile();
 
     KsqlClientConfig ksqlClientConfig =
         KsqlClientConfig.builder().setServer(ksqlContainer.getUrl()).build();
@@ -82,7 +77,7 @@ public class KsqlManagerIT {
     testCreateAndUpdatePath(props, file);
   }
 
-  @Test(expected = IOException.class)
+  @Test
   public void shouldDetectChangesInTheRemoteClusterBetweenRuns() throws IOException {
     Properties props = new Properties();
     props.put(TOPOLOGY_STATE_FROM_CLUSTER, "false");
@@ -93,7 +88,7 @@ public class KsqlManagerIT {
 
     File file = TestUtils.getResourceFile("/descriptor-ksql.yaml");
 
-    testDeleteRemoteButNotLocal(props, file);
+    assertThrows(IOException.class, () -> testDeleteRemoteButNotLocal(props, file));
   }
 
   public void testCreateAndUpdatePath(Properties props, File file) throws IOException {

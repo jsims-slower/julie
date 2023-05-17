@@ -3,6 +3,7 @@ package com.purbon.kafka.topology.integration;
 import static com.purbon.kafka.topology.CommandLineInterface.BROKERS_OPTION;
 import static com.purbon.kafka.topology.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.BackendController;
 import com.purbon.kafka.topology.Configuration;
@@ -18,42 +19,35 @@ import com.purbon.kafka.topology.serdes.TopologySerdes;
 import com.purbon.kafka.topology.utils.TestUtils;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class ConnectorManagerIT {
-
-  static SaslPlaintextKafkaContainer container;
-  static ConnectContainer connectContainer;
-
-  private KConnectApiClient client;
-  private KafkaConnectArtefactManager connectorManager;
-  private TopologySerdes parser;
-  private ExecutionPlan plan;
 
   private static final String TRUSTSTORE_JKS = "/ksql-ssl/truststore/ksqldb.truststore.jks";
   private static final String KEYSTORE_JKS = "/ksql-ssl/keystore/ksqldb.keystore.jks";
 
-  @After
-  public void after() {
-    connectContainer.stop();
-    container.stop();
-  }
+  @Container
+  static SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
 
-  @Before
+  @Container
+  static ConnectContainer connectContainer =
+      new ConnectContainer(container, TRUSTSTORE_JKS, KEYSTORE_JKS);
+
+  private KConnectApiClient client;
+  private KafkaConnectArtefactManager connectorManager;
+  private ExecutionPlan plan;
+
+  @BeforeEach
   public void configure() throws IOException {
-    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
-    container.start();
-    connectContainer = new ConnectContainer(container, TRUSTSTORE_JKS, KEYSTORE_JKS);
-    connectContainer.start();
-
-    Files.deleteIfExists(Paths.get(".cluster-state"));
+    TestUtils.deleteStateFile();
 
     this.plan = ExecutionPlan.init(new BackendController(), System.out);
   }
@@ -85,9 +79,8 @@ public class ConnectorManagerIT {
     testCreateAndUpdatePath(props, file);
   }
 
-  @Test(expected = IOException.class)
-  public void shouldDetectChangesInTheRemoteClusterBetweenRuns()
-      throws IOException, InterruptedException {
+  @Test
+  public void shouldDetectChangesInTheRemoteClusterBetweenRuns() {
     Properties props = new Properties();
     props.put(TOPOLOGY_TOPIC_STATE_FROM_CLUSTER, "false");
     props.put(ALLOW_DELETE_CONNECT_ARTEFACTS, "true");
@@ -96,7 +89,7 @@ public class ConnectorManagerIT {
 
     File file = TestUtils.getResourceFile("/descriptor-connector.yaml");
 
-    testDeleteRemoteButNotLocal(props, file);
+    assertThrows(IOException.class, () -> testDeleteRemoteButNotLocal(props, file));
   }
 
   private void testCreateAndUpdatePath(Properties props, File file)
@@ -132,7 +125,7 @@ public class ConnectorManagerIT {
 
   private Topology initTopology(Properties props, File file) throws IOException {
     Configuration config = prepareClientConfig(props);
-    parser = new TopologySerdes(config, new PlanMap());
+    TopologySerdes parser = new TopologySerdes(config, new PlanMap());
     Topology topology = parser.deserialise(file);
     connectorManager = prepareManager(config, file);
     return topology;

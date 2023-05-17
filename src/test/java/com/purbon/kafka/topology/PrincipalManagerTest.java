@@ -21,18 +21,17 @@ import com.purbon.kafka.topology.model.Topology;
 import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import com.purbon.kafka.topology.model.users.Consumer;
 import com.purbon.kafka.topology.model.users.Producer;
+import com.purbon.kafka.topology.utils.TestUtils;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class PrincipalManagerTest {
 
   private Map<String, String> cliOps;
@@ -41,8 +40,6 @@ public class PrincipalManagerTest {
   @Mock PrincipalProvider provider;
 
   ExecutionPlan plan;
-
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
   PrincipalUpdateManager principalUpdateManager;
   PrincipalDeleteManager principalDeleteManager;
@@ -54,10 +51,10 @@ public class PrincipalManagerTest {
 
   @Mock ExecutionPlan mockPlan;
 
-  @Before
+  @BeforeEach
   public void before() throws IOException {
 
-    Files.deleteIfExists(Paths.get(".cluster-state"));
+    TestUtils.deleteStateFile();
     backendController = new BackendController();
 
     cliOps = new HashMap<>();
@@ -167,7 +164,7 @@ public class PrincipalManagerTest {
     principalDeleteManager.updatePlan(topology, plan);
 
     Collection<ServiceAccount> accounts =
-        Arrays.asList(new ServiceAccount("124", "producer", MANAGED_BY));
+        Collections.singletonList(new ServiceAccount("124", "producer", MANAGED_BY));
 
     assertThat(plan.getActions()).hasSize(1);
     assertThat(plan.getActions()).containsAnyOf(new ClearAccounts(provider, accounts));
@@ -213,10 +210,6 @@ public class PrincipalManagerTest {
     topology.addProject(project);
 
     doNothing().when(provider).configure();
-
-    doReturn(new ServiceAccount("123", "consumer", MANAGED_BY))
-        .when(provider)
-        .createServiceAccount(eq("consumer"), eq(MANAGED_BY));
 
     doReturn(new ServiceAccount("124", "producer", MANAGED_BY))
         .when(provider)

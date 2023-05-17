@@ -8,11 +8,13 @@ import com.purbon.kafka.topology.serdes.TopologySerdes;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class TopologyObjectBuilder {
@@ -41,7 +43,7 @@ public class TopologyObjectBuilder {
       if (!config.areMultipleContextPerDirEnabled()
           && (!collection.containsKey(context) && collection.size() == 1)) {
         // the parsing found a new topology with a different context, as it is not enabled
-        // it should be flag as error
+        // it should be flagged as an error
         throw new IOException("Topologies from different contexts are not allowed");
       }
       if (!collection.containsKey(context)) {
@@ -87,13 +89,16 @@ public class TopologyObjectBuilder {
       String fileOrDir, Configuration config, PlanMap plans) throws IOException {
     TopologySerdes parser = new TopologySerdes(config, plans);
     List<Topology> topologies = new ArrayList<>();
-    boolean isDir = Files.isDirectory(Paths.get(fileOrDir));
-    if (isDir) {
-      Files.list(Paths.get(fileOrDir))
-          .sorted()
-          .filter(p -> !Files.isDirectory(p))
-          .map(path -> parser.deserialise(path.toFile()))
-          .forEach(subTopology -> topologies.add(subTopology));
+    Path filePath = Paths.get(fileOrDir);
+    if (Files.isDirectory(filePath)) {
+      try (var files = Files.list(filePath)) {
+        files
+            .sorted()
+            .filter(Predicate.not(Files::isDirectory))
+            .map(Path::toFile)
+            .map(parser::deserialise)
+            .forEach(topologies::add);
+      }
     } else {
       Topology firstTopology = parser.deserialise(new File(fileOrDir));
       topologies.add(firstTopology);

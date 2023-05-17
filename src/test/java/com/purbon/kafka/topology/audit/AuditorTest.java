@@ -7,19 +7,17 @@ import com.purbon.kafka.topology.PrincipalProvider;
 import com.purbon.kafka.topology.actions.accounts.CreateAccounts;
 import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import java.util.HashSet;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class AuditorTest {
 
   @Mock Appender appender;
 
   @Mock PrincipalProvider provider;
-
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
   @Test
   public void shouldComposeDetailedViewOfProperties() {

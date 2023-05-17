@@ -25,7 +25,7 @@ public class TestTopologyBuilder {
   private final Topology topology;
   private final Project project;
   private Set<Topic> topics = new HashSet<>();
-  private Set<Topic> specialTopics = new HashSet<>();
+  private final Set<Topic> specialTopics = new HashSet<>();
   private final Set<Consumer> consumers = new HashSet<>();
   private final Set<Producer> producers = new HashSet<>();
   private final Set<KStream> kstreams = new HashSet<>();

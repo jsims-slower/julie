@@ -5,7 +5,7 @@ import static com.purbon.kafka.topology.Constants.JULIE_S3_BUCKET;
 import static com.purbon.kafka.topology.Constants.JULIE_S3_ENDPOINT;
 import static com.purbon.kafka.topology.Constants.JULIE_S3_REGION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.AnonymousAWSCredentials;
@@ -26,21 +26,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.kafka.common.resource.ResourceType;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class S3BackendIT {
 
   private S3Mock api;
-  private Map<String, String> cliOps;
+  private final Map<String, String> cliOps = new HashMap<>();
 
   private static final String TEST_BUCKET = "testbucket";
   private static final String TEST_ENDPOINT = "http://127.0.0.1:8001";
 
-  @Before
+  @BeforeEach
   public void before() {
-    cliOps = new HashMap<>();
     cliOps.put(BROKERS_OPTION, "");
 
     long time = System.currentTimeMillis();
@@ -61,7 +60,7 @@ public class S3BackendIT {
     client.createBucket(TEST_BUCKET);
   }
 
-  @After
+  @AfterEach
   public void after() {
     api.shutdown();
   }

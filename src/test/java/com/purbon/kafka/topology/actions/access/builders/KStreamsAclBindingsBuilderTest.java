@@ -10,18 +10,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import org.apache.kafka.common.resource.ResourceType;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class KStreamsAclBindingsBuilderTest {
 
   private KStreamsAclBindingsBuilder builder;
-  private AclsBindingsBuilder aclsBindingsBuilder;
-
-  @Before
-  public void setUp() {
-    aclsBindingsBuilder = new AclsBindingsBuilder(new Configuration());
-  }
+  private final AclsBindingsBuilder aclsBindingsBuilder =
+      new AclsBindingsBuilder(new Configuration());
 
   @Test
   public void testStreamsWithoutApplicationId() {

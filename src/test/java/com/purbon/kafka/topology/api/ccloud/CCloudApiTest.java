@@ -19,22 +19,20 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class CCloudApiTest {
 
   private CCloudApi apiClient;
-  private Configuration config;
 
   @Mock JulieHttpClient httpClient;
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
-  @Before
+  @BeforeEach
   public void before() throws IOException {
 
     Map<String, String> cliOps = new HashMap<>();
@@ -45,7 +43,7 @@ public class CCloudApiTest {
     props.put(CCLOUD_CLOUD_API_KEY, "apiKey");
     props.put(CCLOUD_CLOUD_API_SECRET, "apiSecret");
     props.put(CCLOUD_SA_ACCOUNT_QUERY_PAGE_SIZE, 1);
-    config = new Configuration(cliOps, props);
+    Configuration config = new Configuration(cliOps, props);
 
     apiClient = new CCloudApi(httpClient, Optional.of(httpClient), config);
   }

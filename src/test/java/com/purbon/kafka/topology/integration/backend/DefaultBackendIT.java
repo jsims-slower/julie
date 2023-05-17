@@ -5,21 +5,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.purbon.kafka.topology.BackendController;
 import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
+import com.purbon.kafka.topology.utils.TestUtils;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import org.apache.kafka.common.resource.ResourceType;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class DefaultBackendIT {
 
   BackendController backend;
 
-  @Before
-  public void before() throws IOException {
-    Files.deleteIfExists(Paths.get(".cluster-state"));
+  @BeforeEach
+  public void before() {
+    TestUtils.deleteStateFile();
     backend = new BackendController();
   }
 

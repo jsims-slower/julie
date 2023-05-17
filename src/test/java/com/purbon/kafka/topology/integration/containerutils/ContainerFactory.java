@@ -1,15 +1,13 @@
 package com.purbon.kafka.topology.integration.containerutils;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.testcontainers.utility.DockerImageName;
 
+@Slf4j
 public class ContainerFactory {
 
-  private static final Logger LOGGER = LogManager.getLogger(ContainerFactory.class);
-
   public static SaslPlaintextKafkaContainer fetchSaslKafkaContainer(String version) {
-    LOGGER.debug("Fetching SASL Kafka Container with version=" + version);
+    log.debug("Fetching SASL Kafka Container with version={}", version);
     if (version == null || version.isEmpty()) {
       return new SaslPlaintextKafkaContainer();
     } else {

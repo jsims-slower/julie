@@ -25,17 +25,16 @@ import org.apache.kafka.common.acl.AclPermissionType;
 import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourcePattern;
 import org.apache.kafka.common.resource.ResourceType;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class AclsBindingsBuilderTest {
 
-  Configuration config;
+  private final Configuration config = new Configuration();
   AclsBindingsBuilder builder;
 
-  @Before
+  @BeforeEach
   public void before() {
-    config = new Configuration();
     builder = new AclsBindingsBuilder(config);
   }
 

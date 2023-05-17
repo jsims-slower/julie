@@ -1,6 +1,7 @@
 package com.purbon.kafka.topology;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.model.JulieRole;
 import com.purbon.kafka.topology.model.JulieRoleAcl;
@@ -16,21 +17,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class JulieRolesTest {
 
-  JulieRolesSerdes parser;
-
-  @Before
-  public void before() {
-    this.parser = new JulieRolesSerdes();
-  }
-
-  @After
-  public void after() {}
+  private final JulieRolesSerdes parser = new JulieRolesSerdes();
 
   @Test
   public void testSerdes() throws IOException {
@@ -88,13 +79,13 @@ public class JulieRolesTest {
     }
   }
 
-  @Test(expected = IOException.class)
+  @Test
   public void testTopologyValidationException() throws IOException {
     JulieRoles roles = parser.deserialise(TestUtils.getResourceFile("/roles.yaml"));
     TopologySerdes topologySerdes = new TopologySerdes();
 
     Topology topology = topologySerdes.deserialise(TestUtils.getResourceFile("/descriptor.yaml"));
-    roles.validateTopology(topology);
+    assertThrows(IOException.class, () -> roles.validateTopology(topology));
   }
 
   @Test

@@ -1,15 +1,13 @@
 package com.purbon.kafka.topology.utils;
 
 import java.io.IOException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.zookeeper.ZooKeeper;
 
+@Slf4j
 public class ZKClient {
 
-  private static final Logger LOGGER = LogManager.getLogger(ZKClient.class);
-
-  private ZKConnection connection;
+  private final ZKConnection connection;
   private ZooKeeper zkClient;
 
   public ZKClient() {
@@ -25,7 +23,7 @@ public class ZKClient {
       byte[] data = zkClient.getData(path, null, null);
       return new String(data);
     } catch (Exception e) {
-      LOGGER.error(e);
+      log.error("{}", e.getMessage(), e);
       throw new IOException(e);
     }
   }

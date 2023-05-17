@@ -51,6 +51,7 @@
       <build>
         <plugins>
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <version>${maven-failsafe-plugin.version}</version>
             <configuration>
@@ -504,7 +505,6 @@
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
         <version>${spotbugs-maven-plugin.version}</version>
-
         <configuration>
           <xmlOutput>true</xmlOutput>
           <!-- Optional directory to put spotbugs xdoc xml report -->
@@ -517,36 +517,36 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- plugins -->
-    <maven-pmd-plugin.version>3.12.0</maven-pmd-plugin.version>
-    <spotbugs-maven-plugin.version>3.1.12.2</spotbugs-maven-plugin.version>
+    <maven-pmd-plugin.version>3.21.0</maven-pmd-plugin.version>
+    <spotbugs-maven-plugin.version>4.7.3.4</spotbugs-maven-plugin.version>
     <maven-site-plugin.version>3.9.0</maven-site-plugin.version>
     <maven-project-info-reports-plugin.version>3.0.0</maven-project-info-reports-plugin.version>
     <jacoco-maven-plugin.version>0.8.6</jacoco-maven-plugin.version>
     <rpm-maven-plugin.version>2.2.0</rpm-maven-plugin.version>
     <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
-    <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
-    <maven-failsafe-plugin.version>2.22.2</maven-failsafe-plugin.version>
+    <maven-surefire-plugin.version>3.2.1</maven-surefire-plugin.version>
+    <maven-failsafe-plugin.version>3.1.0</maven-failsafe-plugin.version>
     <!-- dependencies -->
-    <jackson.version>2.13.4</jackson.version>
+    <jackson.version>2.14.3</jackson.version>
     <log4j.version>2.17.1</log4j.version>
-    <zookeeper.version>3.8.0</zookeeper.version>
+    <zookeeper.version>3.8.1</zookeeper.version>
     <commons.version>1.4</commons.version>
-    <mockito.version>3.6.0</mockito.version>
-    <junit.version>4.13.1</junit.version>
-    <testcontainers.version>1.15.3</testcontainers.version>
+    <mockito.version>5.3.1</mockito.version>
+    <junit.version>5.9.3</junit.version>
+    <testcontainers.version>1.18.1</testcontainers.version>
     <jedis.version>3.2.0</jedis.version>
-    <confluent.version>6.1.0</confluent.version>
-    <confluent-ce.version>6.1.0-ce</confluent-ce.version>
+    <confluent.version>6.2.10</confluent.version>
+    <confluent-ce.version>6.2.10-ce</confluent-ce.version>
     <avro.version>1.9.2</avro.version>
     <jersey.version>2.22.2</jersey.version>
-    <assertj.version>3.15.0</assertj.version>
+    <assertj.version>3.24.2</assertj.version>
     <jinjava.version>2.5.4</jinjava.version>
     <aws.java.sdk.version>2.16.31</aws.java.sdk.version>
     <gcp.java.sdk.version>19.2.1</gcp.java.sdk.version>
     <ksqldb.version>0.27.1</ksqldb.version>
     <ksqldb.client.version>7.0.0</ksqldb.client.version>
-    <typesafe.version>1.4.0</typesafe.version>
-    <lombok.version>1.18.22</lombok.version>
+    <typesafe.version>1.4.2</typesafe.version>
+    <lombok.version>1.18.26</lombok.version>
   </properties>
 
   <dependencies>
@@ -693,21 +693,27 @@
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
+      <artifactId>mockito-junit-jupiter</artifactId>
       <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
       <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
+      <artifactId>junit-jupiter</artifactId>
       <version>${testcontainers.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.assertj</groupId>

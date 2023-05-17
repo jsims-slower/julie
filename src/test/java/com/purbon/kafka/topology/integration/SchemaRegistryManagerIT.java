@@ -27,39 +27,32 @@ import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.junit.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class SchemaRegistryManagerIT {
 
-  static SaslPlaintextKafkaContainer container;
-  static SchemaRegistryContainer schemaRegistryContainer;
+  @Container
+  private static final SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
+
+  @Container
+  private static final SchemaRegistryContainer schemaRegistryContainer =
+      new SchemaRegistryContainer(container);
+
   private TopologySerdes parser;
   private Configuration config;
   private ExecutionPlan plan;
 
   private SchemaRegistryClient schemaRegistryClient;
 
-  @BeforeClass
-  public static void setup() {
-    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
-    container.start();
-    schemaRegistryContainer = new SchemaRegistryContainer(container);
-    schemaRegistryContainer.start();
-  }
-
-  @AfterClass
-  public static void after() {
-    schemaRegistryContainer.stop();
-    container.stop();
-  }
-
-  @Before
+  @BeforeEach
   public void configure() throws IOException {
-    Files.deleteIfExists(Paths.get(".cluster-state"));
+    TestUtils.deleteStateFile();
 
     parser = new TopologySerdes();
 
@@ -82,89 +75,90 @@ public class SchemaRegistryManagerIT {
     schemaRegistryClient = new CachedSchemaRegistryClient(restService, 10, providers, null, null);
   }
 
-  @After
-  public void teardown() {}
-
   @Test
   public void testSchemaSetupForAvroDefaults() throws IOException, RestClientException {
-    AdminClient kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container);
-    TopologyBuilderAdminClient adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
+    try (var kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container)) {
+      TopologyBuilderAdminClient adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
 
-    File file = TestUtils.getResourceFile("/descriptor-schemas-avro.yaml");
+      File file = TestUtils.getResourceFile("/descriptor-schemas-avro.yaml");
 
-    SchemaRegistryManager schemaRegistryManager =
-        new SchemaRegistryManager(schemaRegistryClient, file.getAbsolutePath());
+      SchemaRegistryManager schemaRegistryManager =
+          new SchemaRegistryManager(schemaRegistryClient, file.getAbsolutePath());
 
-    TopicManager topicManager = new TopicManager(adminClient, schemaRegistryManager, config);
+      TopicManager topicManager = new TopicManager(adminClient, schemaRegistryManager, config);
 
-    topicManager.updatePlan(parser.deserialise(file), plan);
-    plan.run();
+      topicManager.updatePlan(parser.deserialise(file), plan);
+      plan.run();
 
-    verifySubject(
-        "schemas.avro.foo.bar.avro-value",
-        "schemas.avro.foo.cat.avro-key",
-        "schemas.avro.foo.cat.avro-value");
+      verifySubject(
+          "schemas.avro.foo.bar.avro-value",
+          "schemas.avro.foo.cat.avro-key",
+          "schemas.avro.foo.cat.avro-value");
+    }
   }
 
   @Test
   public void testSchemaSetupForJsonDefaults() throws IOException, RestClientException {
-    AdminClient kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container);
-    TopologyBuilderAdminClient adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
+    try (var kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container)) {
+      TopologyBuilderAdminClient adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
 
-    File file = TestUtils.getResourceFile("/descriptor-schemas-json.yaml");
+      File file = TestUtils.getResourceFile("/descriptor-schemas-json.yaml");
 
-    SchemaRegistryManager schemaRegistryManager =
-        new SchemaRegistryManager(schemaRegistryClient, file.getAbsolutePath());
+      SchemaRegistryManager schemaRegistryManager =
+          new SchemaRegistryManager(schemaRegistryClient, file.getAbsolutePath());
 
-    TopicManager topicManager = new TopicManager(adminClient, schemaRegistryManager, config);
+      TopicManager topicManager = new TopicManager(adminClient, schemaRegistryManager, config);
 
-    topicManager.updatePlan(parser.deserialise(file), plan);
-    plan.run();
+      topicManager.updatePlan(parser.deserialise(file), plan);
+      plan.run();
 
-    verifySubject("schemas.json.foo.foo.json-value");
+      verifySubject("schemas.json.foo.foo.json-value");
+    }
   }
 
   @Test
   public void testSchemaSetupForProtoBufDefaults() throws IOException, RestClientException {
-    AdminClient kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container);
-    TopologyBuilderAdminClient adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
+    try (var kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container)) {
+      TopologyBuilderAdminClient adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
 
-    File file = TestUtils.getResourceFile("/descriptor-schemas-proto.yaml");
+      File file = TestUtils.getResourceFile("/descriptor-schemas-proto.yaml");
 
-    SchemaRegistryManager schemaRegistryManager =
-        new SchemaRegistryManager(schemaRegistryClient, file.getAbsolutePath());
+      SchemaRegistryManager schemaRegistryManager =
+          new SchemaRegistryManager(schemaRegistryClient, file.getAbsolutePath());
 
-    TopicManager topicManager = new TopicManager(adminClient, schemaRegistryManager, config);
+      TopicManager topicManager = new TopicManager(adminClient, schemaRegistryManager, config);
 
-    topicManager.updatePlan(parser.deserialise(file), plan);
-    plan.run();
+      topicManager.updatePlan(parser.deserialise(file), plan);
+      plan.run();
 
-    verifySubject("schemas.proto.foo.foo.proto-value");
+      verifySubject("schemas.proto.foo.foo.proto-value");
+    }
   }
 
   @Test
   public void testSchemaSetupWithContentInUTF() throws IOException, RestClientException {
-    AdminClient kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container);
-    TopologyBuilderAdminClient adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
+    try (var kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container)) {
+      TopologyBuilderAdminClient adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
 
-    File file = TestUtils.getResourceFile("/descriptor-schemas-utf.yaml");
+      File file = TestUtils.getResourceFile("/descriptor-schemas-utf.yaml");
 
-    SchemaRegistryManager schemaRegistryManager =
-        new SchemaRegistryManager(schemaRegistryClient, file.getAbsolutePath());
+      SchemaRegistryManager schemaRegistryManager =
+          new SchemaRegistryManager(schemaRegistryClient, file.getAbsolutePath());
 
-    TopicManager topicManager = new TopicManager(adminClient, schemaRegistryManager, config);
+      TopicManager topicManager = new TopicManager(adminClient, schemaRegistryManager, config);
 
-    topicManager.updatePlan(parser.deserialise(file), plan);
-    plan.run();
+      topicManager.updatePlan(parser.deserialise(file), plan);
+      plan.run();
 
-    String subjectName = "schemas.utf.foo.bar.avro-value";
-    verifySubject(subjectName);
+      String subjectName = "schemas.utf.foo.bar.avro-value";
+      verifySubject(subjectName);
 
-    SchemaMetadata schemaMetadata = schemaRegistryClient.getLatestSchemaMetadata(subjectName);
-    String schema = schemaMetadata.getSchema();
+      SchemaMetadata schemaMetadata = schemaRegistryClient.getLatestSchemaMetadata(subjectName);
+      String schema = schemaMetadata.getSchema();
 
-    assertThat(schema).contains("Näme");
-    assertThat(schema).contains("Äge");
+      assertThat(schema).contains("Näme");
+      assertThat(schema).contains("Äge");
+    }
   }
 
   private void verifySubject(String... subjects) throws IOException, RestClientException {

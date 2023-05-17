@@ -10,15 +10,15 @@ import com.purbon.kafka.topology.utils.TestUtils;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class ArtefactManagerTest {
 
-  public class MyArtefactManager extends ArtefactManager {
+  public static class MyArtefactManager extends ArtefactManager {
 
     public MyArtefactManager(
         ArtefactClient client, Configuration config, String topologyFileOrDir) {
@@ -61,11 +61,9 @@ public class ArtefactManagerTest {
     public void printCurrentState(PrintStream out) {}
   }
 
-  @Mock public ArtefactClient mockClient1;
+  @Mock ArtefactClient mockClient1;
 
-  @Mock public ArtefactClient mockClient2;
-
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
+  @Mock ArtefactClient mockClient2;
 
   @Test
   public void testClientSelection() {

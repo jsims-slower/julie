@@ -1,17 +1,19 @@
 package com.purbon.kafka.topology.validation.topic;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.purbon.kafka.topology.exceptions.ConfigurationException;
 import com.purbon.kafka.topology.exceptions.ValidationException;
 import com.purbon.kafka.topology.model.Topic;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TopicNameRegexValidationTest {
 
-  @Test(expected = ValidationException.class)
-  public void testKoConfigValues() throws ValidationException, ConfigurationException {
+  @Test
+  public void testKoConfigValues() throws ConfigurationException {
     Topic topic = new Topic("topic");
     TopicNameRegexValidation validation = new TopicNameRegexValidation("[1-9]");
-    validation.valid(topic);
+    assertThrows(ValidationException.class, () -> validation.valid(topic));
   }
 
   @Test
@@ -21,10 +23,8 @@ public class TopicNameRegexValidationTest {
     validation.valid(topic);
   }
 
-  @Test(expected = ConfigurationException.class)
-  public void testEmptyParam() throws ValidationException, ConfigurationException {
-    Topic topic = new Topic("topic");
-    TopicNameRegexValidation validation = new TopicNameRegexValidation("");
-    validation.valid(topic);
+  @Test
+  public void testEmptyParam() throws ConfigurationException {
+    assertThrows(ConfigurationException.class, () -> new TopicNameRegexValidation(""));
   }
 }

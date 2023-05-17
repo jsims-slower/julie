@@ -17,7 +17,7 @@ import org.apache.kafka.clients.admin.AdminClient;
 
 public final class ContainerTestUtils {
 
-  static final String DEFAULT_CP_KAFKA_VERSION = "6.1.0";
+  static final String DEFAULT_CP_KAFKA_VERSION = "6.2.10";
 
   private ContainerTestUtils() {}
 
@@ -66,11 +66,9 @@ public final class ContainerTestUtils {
     try (final AdminClient kafkaAdminClient = getSaslAdminClient(container)) {
       final JulieOps julieOps =
           getKafkaTopologyBuilder(kafkaAdminClient, topologyResource, configResource);
-      try {
-        julieOps.run();
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
+      julieOps.run();
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
     } finally {
       /* Clean up static stuff buried deep below TopologyBuilderConfig.
        * I don't like this "hack", but I didn't immediately see

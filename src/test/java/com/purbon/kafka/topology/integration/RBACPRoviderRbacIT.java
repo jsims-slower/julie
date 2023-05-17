@@ -56,16 +56,16 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import org.apache.kafka.common.resource.PatternType;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@Ignore("Zookeeper issues")
-@RunWith(MockitoJUnitRunner.class)
+@Disabled("Zookeeper issues")
+@ExtendWith(MockitoExtension.class)
 public class RBACPRoviderRbacIT extends MDSBaseTest {
 
   private String mdsServer = "http://localhost:8090";
@@ -79,7 +79,7 @@ public class RBACPRoviderRbacIT extends MDSBaseTest {
   private AccessControlManager defaultAccessControlManager;
   private AccessControlManager optimizedAclsAccessControlManager;
 
-  @Before
+  @BeforeEach
   public void before() throws IOException, InterruptedException {
     super.beforeEach();
     TestUtils.deleteStateFile();

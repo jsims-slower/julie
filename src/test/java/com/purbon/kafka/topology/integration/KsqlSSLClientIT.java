@@ -12,35 +12,23 @@ import com.purbon.kafka.topology.integration.containerutils.SaslPlaintextKafkaCo
 import com.purbon.kafka.topology.integration.containerutils.SslKsqlContainer;
 import java.io.IOException;
 import java.util.List;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class KsqlSSLClientIT {
 
   private static final String KSQLDB_TRUSTSTORE_JKS = "/ksql-ssl/truststore/ksqldb.truststore.jks";
   private static final String KSQLDB_KEYSTORE_JKS = "/ksql-ssl/keystore/ksqldb.keystore.jks";
-  private static SaslPlaintextKafkaContainer container;
-  private static KsqlContainer sslKsqlContainer;
 
-  @After
-  public void after() {
-    sslKsqlContainer.stop();
-    container.stop();
-  }
+  @Container
+  private static final SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
 
-  @Before
-  public void configure() {
-    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
-    container.start();
-    sslKsqlContainer = new SslKsqlContainer(container, KSQLDB_TRUSTSTORE_JKS, KSQLDB_KEYSTORE_JKS);
-    try {
-      sslKsqlContainer.start();
-    } catch (Exception e) {
-      e.printStackTrace();
-      System.out.println(sslKsqlContainer.getLogs());
-    }
-  }
+  @Container
+  private static final KsqlContainer sslKsqlContainer =
+      new SslKsqlContainer(container, KSQLDB_TRUSTSTORE_JKS, KSQLDB_KEYSTORE_JKS);
 
   @Test
   public void testStreamTableCreateAndDelete() throws IOException {

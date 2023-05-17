@@ -3,6 +3,7 @@ package com.purbon.kafka.topology;
 import static com.purbon.kafka.topology.CommandLineInterface.BROKERS_OPTION;
 import static com.purbon.kafka.topology.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.audit.KafkaAppender;
 import com.purbon.kafka.topology.audit.StdoutAppender;
@@ -16,25 +17,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.kafka.common.KafkaException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class JulieOpsAuxiliaryTest {
 
-  private Map<String, String> cliOps;
-  private Properties props;
+  private final Map<String, String> cliOps = new HashMap<>();
+  private final Properties props = new Properties();
 
-  @Before
+  @BeforeEach
   public void before() {
-    cliOps = new HashMap<>();
     cliOps.put(BROKERS_OPTION, "");
-    props = new Properties();
     props.put(JULIE_AUDIT_ENABLED, "true");
   }
-
-  @After
-  public void after() {}
 
   @Test
   public void shouldConfigureAFileBackend() throws IOException {
@@ -59,9 +54,10 @@ public class JulieOpsAuxiliaryTest {
     testBackend(GCP_STATE_PROCESSOR_CLASS, GCPBackend.class);
   }
 
-  @Test(expected = KafkaException.class)
-  public void shouldConfigureAKafkaBackend() throws IOException {
-    testBackend(KAFKA_STATE_PROCESSOR_CLASS, KafkaBackend.class);
+  @Test
+  public void shouldConfigureAKafkaBackend() {
+    assertThrows(
+        KafkaException.class, () -> testBackend(KAFKA_STATE_PROCESSOR_CLASS, KafkaBackend.class));
   }
 
   @Test
@@ -74,14 +70,14 @@ public class JulieOpsAuxiliaryTest {
     testAuditor("com.purbon.kafka.topology.audit.KafkaAppender", KafkaAppender.class);
   }
 
-  private void testAuditor(String appenderName, Class appenderClass) throws IOException {
+  private void testAuditor(String appenderName, Class<?> appenderClass) throws IOException {
     props.put(JULIE_AUDIT_APPENDER_CLASS, appenderName);
     Configuration config = new Configuration(cliOps, props);
     var auditor = JulieOpsAuxiliary.configureAndBuildAuditor(config);
     assertThat(auditor.getAppender()).isInstanceOf(appenderClass);
   }
 
-  private void testBackend(String processorClass, Class backendClass) throws IOException {
+  private void testBackend(String processorClass, Class<?> backendClass) throws IOException {
     props.put(STATE_PROCESSOR_IMPLEMENTATION_CLASS, processorClass);
     Configuration config = new Configuration(cliOps, props);
     var backend = JulieOpsAuxiliary.buildBackendController(config);

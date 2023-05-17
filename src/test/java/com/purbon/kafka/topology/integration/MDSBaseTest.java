@@ -3,12 +3,11 @@ package com.purbon.kafka.topology.integration;
 import com.purbon.kafka.topology.utils.JSON;
 import com.purbon.kafka.topology.utils.ZKClient;
 import java.io.IOException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public abstract class MDSBaseTest {
 
-  private static final Logger LOGGER = LogManager.getLogger(MDSBaseTest.class);
   private ZKClient zkClient;
 
   public void beforeEach() throws IOException, InterruptedException {
@@ -22,7 +21,7 @@ public abstract class MDSBaseTest {
       String nodeData = zkClient.getNodeData("/cluster/id");
       return JSON.toMap(nodeData).get("id").toString();
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error("{}", e.getMessage(), e);
     }
     return "-1";
   }

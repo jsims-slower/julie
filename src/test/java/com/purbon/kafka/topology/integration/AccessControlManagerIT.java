@@ -5,7 +5,8 @@ import static com.purbon.kafka.topology.Constants.*;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import com.purbon.kafka.topology.AccessControlManager;
@@ -37,14 +38,21 @@ import org.apache.kafka.common.acl.*;
 import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourcePatternFilter;
 import org.apache.kafka.common.resource.ResourceType;
-import org.junit.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
+@ExtendWith(MockitoExtension.class)
 public class AccessControlManagerIT {
 
-  private static SaslPlaintextKafkaContainer container;
+  @Container
+  private static final SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
+
   private static AdminClient kafkaAdminClient;
   private TopologyBuilderAdminClient topologyAdminClient;
   private AccessControlManager accessControlManager;
@@ -53,24 +61,21 @@ public class AccessControlManagerIT {
 
   private ExecutionPlan plan;
   private BackendController cs;
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
   @Mock private Configuration config;
 
-  @BeforeClass
+  @BeforeAll
   public static void setup() {
-    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
-    container.start();
-  }
-
-  @AfterClass
-  public static void teardown() {
-    container.stop();
-  }
-
-  @Before
-  public void before() throws IOException {
     kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container);
+  }
+
+  @AfterAll
+  public static void teardown() {
+    kafkaAdminClient.close();
+  }
+
+  @BeforeEach
+  public void before() throws IOException {
     topologyAdminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
     topologyAdminClient.clearAcls();
     TestUtils.deleteStateFile();
@@ -196,7 +201,7 @@ public class AccessControlManagerIT {
     verifyConsumerAcls(consumers);
   }
 
-  @Test(expected = IOException.class)
+  @Test
   public void shouldDetectChangesInTheRemoteClusterBetweenRuns() throws IOException {
 
     Properties props = new Properties();
@@ -227,7 +232,7 @@ public class AccessControlManagerIT {
             "TOPIC", "ctx.project.topic2", "*", "DESCRIBE", "User:foo", "LITERAL");
     adminClient.clearAcls(binding);
 
-    accessControlManager.updatePlan(topology, plan);
+    assertThrows(IOException.class, () -> accessControlManager.updatePlan(topology, plan));
   }
 
   @Test

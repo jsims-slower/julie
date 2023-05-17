@@ -1,8 +1,9 @@
 package com.purbon.kafka.topology.model.users;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class PrincipalTest {
   @Test
@@ -19,14 +20,16 @@ public class PrincipalTest {
     assertEquals(ConfluentCloudPrincipal.PrincipalType.Group, principal.getPrincipalType());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void failsForMalformedPrincipalString() {
-    ConfluentCloudPrincipal.fromString("");
+    assertThrows(IllegalArgumentException.class, () -> ConfluentCloudPrincipal.fromString(""));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void failsForInvalidPrincipalTypeString() {
-    ConfluentCloudPrincipal.fromString("Vulcan:sa-spock");
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> ConfluentCloudPrincipal.fromString("Vulcan:sa-spock"));
   }
 
   @Test

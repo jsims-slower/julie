@@ -3,7 +3,7 @@ package com.purbon.kafka.topology.integration.backend;
 import static com.purbon.kafka.topology.CommandLineInterface.BROKERS_OPTION;
 import static com.purbon.kafka.topology.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.purbon.kafka.topology.BackendController;
 import com.purbon.kafka.topology.Configuration;
@@ -23,62 +23,53 @@ import com.purbon.kafka.topology.model.Topology;
 import com.purbon.kafka.topology.model.artefact.KafkaConnectArtefact;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import com.purbon.kafka.topology.schemas.SchemaRegistryManager;
+import com.purbon.kafka.topology.utils.TestUtils;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.common.resource.ResourceType;
-import org.junit.*;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import redis.clients.jedis.Jedis;
 
+@Testcontainers
 public class RedisBackendIT {
-
-  @Rule
-  public GenericContainer redis =
+  @Container
+  public final GenericContainer<?> redis =
       new GenericContainer<>(DockerImageName.parse("redis:5.0.3-alpine")).withExposedPorts(6379);
 
-  private static SaslPlaintextKafkaContainer container;
+  @Container
+  private static final SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
+
   private TopicManager topicManager;
-  private AdminClient kafkaAdminClient;
 
   private ExecutionPlan plan;
 
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
   private Jedis jedis;
-  private static String bucket;
+  private RedisBackend backend;
 
-  @BeforeClass
-  public static void setup() {
-    bucket = "bucket";
-    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
-    container.start();
-  }
+  private static final String bucket = "bucket";
 
-  @AfterClass
-  public static void teardown() {
-    container.stop();
-  }
-
-  @Before
+  @BeforeEach
   public void before() throws IOException {
-    Files.deleteIfExists(Paths.get(".cluster-state"));
+    TestUtils.deleteStateFile();
 
-    kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container);
+    AdminClient kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container);
     TopologyBuilderAdminClient adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
 
     final SchemaRegistryClient schemaRegistryClient = new MockSchemaRegistryClient();
     final SchemaRegistryManager schemaRegistryManager =
         new SchemaRegistryManager(schemaRegistryClient, System.getProperty("user.dir"));
 
-    this.jedis = new Jedis(redis.getContainerIpAddress(), redis.getFirstMappedPort());
-    var backend = new RedisBackend(jedis, bucket);
+    jedis = new Jedis(redis.getHost(), redis.getFirstMappedPort());
+    backend = new RedisBackend(jedis, bucket);
 
     this.plan = ExecutionPlan.init(new BackendController(backend), System.out);
 
@@ -87,7 +78,7 @@ public class RedisBackendIT {
     props.put(ALLOW_DELETE_TOPICS, true);
     props.put(
         STATE_PROCESSOR_IMPLEMENTATION_CLASS, "com.purbon.kafka.topology.backend.RedisBackend");
-    props.put(REDIS_HOST_CONFIG, redis.getContainerIpAddress());
+    props.put(REDIS_HOST_CONFIG, redis.getHost());
     props.put(REDIS_PORT_CONFIG, redis.getFirstMappedPort());
 
     HashMap<String, String> cliOps = new HashMap<>();
@@ -100,11 +91,7 @@ public class RedisBackendIT {
 
   @Test
   public void testStoreAndFetch() throws IOException {
-
-    String host = redis.getContainerIpAddress();
-    int port = redis.getFirstMappedPort();
-    RedisBackend rsp = new RedisBackend(host, port, bucket);
-    rsp.load();
+    backend.load();
 
     TopologyAclBinding binding =
         TopologyAclBinding.build(
@@ -118,9 +105,9 @@ public class RedisBackendIT {
     state.addBindings(Collections.singleton(binding));
     state.addConnectors(connectors);
 
-    rsp.save(state);
+    backend.save(state);
 
-    BackendState recoveredState = rsp.load();
+    BackendState recoveredState = backend.load();
 
     assertThat(recoveredState.getTopics()).hasSize(2);
     assertThat(state.getTopics()).contains("foo", "bar");

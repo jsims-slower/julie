@@ -22,14 +22,18 @@ import java.util.concurrent.ExecutionException;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.CreateAclsResult;
 import org.apache.kafka.common.KafkaFuture;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class TopologyBuilderAdminClientTest {
 
   @Mock CreateAclsResult createAclsResult;
@@ -37,23 +41,18 @@ public class TopologyBuilderAdminClientTest {
   @Mock AdminClient kafkaAdminClient;
   @Mock Configuration config;
 
-  TopologyBuilderAdminClient adminClient;
+  @InjectMocks private TopologyBuilderAdminClient adminClient;
 
-  private SimpleAclsProvider aclsProvider;
-  private AclsBindingsBuilder bindingsBuilder;
   private ExecutionPlan plan;
 
   @Mock BackendController backendController;
 
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
-
   private AccessControlManager accessControlManager;
 
-  @Before
+  @BeforeEach
   public void setup() throws ExecutionException, InterruptedException, IOException {
-    adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
-    aclsProvider = new SimpleAclsProvider(adminClient);
-    bindingsBuilder = new AclsBindingsBuilder(config);
+    SimpleAclsProvider aclsProvider = new SimpleAclsProvider(adminClient);
+    AclsBindingsBuilder bindingsBuilder = new AclsBindingsBuilder(config);
     accessControlManager = new AccessControlManager(aclsProvider, bindingsBuilder);
 
     plan = ExecutionPlan.init(backendController, System.out);

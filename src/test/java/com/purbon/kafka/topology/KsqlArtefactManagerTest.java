@@ -15,25 +15,22 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class KsqlArtefactManagerTest {
 
   Configuration config;
 
   @Mock KsqlApiClient client;
 
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
-
   TopologySerdes parser;
 
-  @Before
+  @BeforeEach
   public void before() {
 
     Map<String, String> cliOps = new HashMap<>();
@@ -46,9 +43,6 @@ public class KsqlArtefactManagerTest {
 
     parser = new TopologySerdes(config, new PlanMap());
   }
-
-  @After
-  public void after() {}
 
   @Test
   public void testArtefactGenerationOrder() {

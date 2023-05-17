@@ -4,6 +4,7 @@ import static com.purbon.kafka.topology.CommandLineInterface.BROKERS_OPTION;
 import static com.purbon.kafka.topology.Constants.JULIE_INSTANCE_ID;
 import static com.purbon.kafka.topology.Constants.JULIE_KAFKA_CONSUMER_GROUP_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.Configuration;
 import com.purbon.kafka.topology.Constants;
@@ -20,24 +21,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.kafka.common.resource.ResourceType;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class KafkaBackendIT {
 
-  Configuration config;
-  Properties props;
+  private Configuration config;
+  private final Properties props = new Properties();
 
-  private static SaslPlaintextKafkaContainer container;
+  @Container
+  private static final SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
 
-  @Before
+  @BeforeEach
   public void before() throws IOException {
-
-    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
-    container.start();
-
-    props = new Properties();
     props.put(JULIE_INSTANCE_ID, "1234");
 
     Map<String, Object> saslConfig =
@@ -52,14 +51,10 @@ public class KafkaBackendIT {
 
     config = new Configuration(cliOps, props);
 
-    var adminClient = ContainerTestUtils.getSaslAdminClient(container);
-    var topologyAdminClient = new TopologyBuilderAdminClient(adminClient);
-    topologyAdminClient.createTopic(config.getJulieKafkaConfigTopic());
-  }
-
-  @After
-  public void after() {
-    container.stop();
+    try (var adminClient = ContainerTestUtils.getSaslAdminClient(container)) {
+      var topologyAdminClient = new TopologyBuilderAdminClient(adminClient);
+      topologyAdminClient.createTopic(config.getJulieKafkaConfigTopic());
+    }
   }
 
   @Test
@@ -94,7 +89,7 @@ public class KafkaBackendIT {
     newBackend.close();
   }
 
-  @Test(expected = IOException.class)
+  @Test
   public void testWrongConfig() {
 
     KafkaBackend backend = new KafkaBackend();
@@ -106,7 +101,6 @@ public class KafkaBackendIT {
 
     Configuration config = new Configuration(cliOps, props);
 
-    backend.configure(config);
-    backend.close();
+    assertThrows(IOException.class, () -> backend.configure(config));
   }
 }

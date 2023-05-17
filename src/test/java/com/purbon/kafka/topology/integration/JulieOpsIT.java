@@ -1,6 +1,7 @@
 package com.purbon.kafka.topology.integration;
 
 import static com.purbon.kafka.topology.CommandLineInterface.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.JulieOps;
 import com.purbon.kafka.topology.integration.containerutils.ContainerFactory;
@@ -9,26 +10,18 @@ import com.purbon.kafka.topology.utils.TestUtils;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class JulieOpsIT {
 
-  private static SaslPlaintextKafkaContainer container;
+  @Container
+  private static final SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
 
-  @BeforeClass
-  public static void setup() {
-    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
-    container.start();
-  }
-
-  @AfterClass
-  public static void teardown() {
-    container.stop();
-  }
-
-  @Test(expected = IOException.class)
+  @Test
   public void testSetupKafkaTopologyBuilderWithWrongCredentialsHC() throws Exception {
 
     String fileOrDirPath = TestUtils.getResourceFilename("/descriptor.yaml");
@@ -40,7 +33,7 @@ public class JulieOpsIT {
     config.put(QUIET_OPTION, "true");
     config.put(CLIENT_CONFIG_OPTION, clientConfigFile);
 
-    JulieOps.build(fileOrDirPath, config);
+    assertThrows(IOException.class, () -> JulieOps.build(fileOrDirPath, config).close());
   }
 
   @Test
@@ -55,6 +48,6 @@ public class JulieOpsIT {
     config.put(QUIET_OPTION, "true");
     config.put(CLIENT_CONFIG_OPTION, clientConfigFile);
 
-    JulieOps.build(fileOrDirPath, config);
+    JulieOps.build(fileOrDirPath, config).close();
   }
 }

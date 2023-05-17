@@ -1,8 +1,8 @@
 package com.purbon.kafka.topology.actions.topics.builders;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 
 import com.purbon.kafka.topology.TopicManager;
@@ -15,17 +15,16 @@ import java.util.HashMap;
 import org.apache.kafka.clients.admin.Config;
 import org.apache.kafka.clients.admin.ConfigEntry;
 import org.apache.kafka.common.config.TopicConfig;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class TopicConfigUpdatePlanBuilderTest {
 
   private static final String TOPIC_NAME = "foo";
   public static final String DEFAULT_RETENTION_MS = "604800000";
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
   @Mock private TopologyBuilderAdminClient adminClient;
 

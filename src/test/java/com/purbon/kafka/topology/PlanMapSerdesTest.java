@@ -10,17 +10,11 @@ import com.purbon.kafka.topology.utils.TestUtils;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class PlanMapSerdesTest {
 
-  PlanMapSerdes parser;
-
-  @Before
-  public void before() {
-    parser = new PlanMapSerdes();
-  }
+  private final PlanMapSerdes parser = new PlanMapSerdes();
 
   @Test
   public void testSerialization() throws JsonProcessingException {

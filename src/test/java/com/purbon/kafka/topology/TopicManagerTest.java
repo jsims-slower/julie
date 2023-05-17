@@ -15,21 +15,20 @@ import com.purbon.kafka.topology.model.Topology;
 import com.purbon.kafka.topology.model.users.Consumer;
 import com.purbon.kafka.topology.model.users.Producer;
 import com.purbon.kafka.topology.schemas.SchemaRegistryManager;
+import com.purbon.kafka.topology.utils.TestUtils;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.kafka.clients.admin.Config;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class TopicManagerTest {
 
   @Mock TopologyBuilderAdminClient adminClient;
@@ -41,27 +40,24 @@ public class TopicManagerTest {
 
   @Mock PrintStream outputStream;
 
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
-
   private TopicManager topicManager;
   private HashMap<String, String> cliOps;
   private Properties props;
-  private Configuration config;
 
-  @Before
+  @BeforeEach
   public void setup() throws IOException {
 
-    Files.deleteIfExists(Paths.get(".cluster-state"));
+    TestUtils.deleteStateFile();
     backendController = new BackendController();
 
     cliOps = new HashMap<>();
     cliOps.put(BROKERS_OPTION, "");
     props = new Properties();
-    props.put(TOPOLOGY_TOPIC_STATE_FROM_CLUSTER, "false");
+    props.put(TOPOLOGY_TOPIC_STATE_FROM_CLUSTER, "true");
 
     plan = ExecutionPlan.init(backendController, System.out);
 
-    config = new Configuration(cliOps, props);
+    Configuration config = new Configuration(cliOps, props);
     topicManager = new TopicManager(adminClient, schemaRegistryManager, config);
   }
 
@@ -329,9 +325,8 @@ public class TopicManagerTest {
     Topology topology = new TopologyImpl();
     topology.addProject(project);
 
-    Set<String> dummyTopicList = new HashSet<>();
-    dummyTopicList.add(topicB.toString());
-    when(adminClient.listApplicationTopics()).thenReturn(dummyTopicList);
+    when(adminClient.listApplicationTopics()).thenReturn(Collections.singleton(topicB.toString()));
+    doReturn(new Config(Collections.emptyList())).when(adminClient).getActualTopicConfig(any());
 
     topicManager.updatePlan(topology, plan);
     plan.run(true);

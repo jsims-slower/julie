@@ -27,43 +27,45 @@ import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.common.quota.ClientQuotaEntity;
 import org.apache.kafka.common.quota.ClientQuotaFilter;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class QuotasManagerIT {
 
-  private static SaslPlaintextKafkaContainer container;
+  @Container
+  private static final SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"))
+          .withUser("user1")
+          .withUser("user2")
+          .withUser("user3");
+
   private static AdminClient kafkaAdminClient;
 
-  private TopologyBuilderAdminClient topologyAdminClient;
-  private TopicManager topicManager;
   private AccessControlManager accessControlManager;
-  private SimpleAclsProvider aclsProvider;
 
   private ExecutionPlan plan;
-  private BackendController cs;
 
   private QuotasManager quotasManager;
-  private AclsBindingsBuilder bindingsBuilder;
 
-  @BeforeClass
+  @BeforeAll
   public static void setup() {
-    container =
-        ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"))
-            .withUser("user1")
-            .withUser("user2")
-            .withUser("user3");
-    container.start();
-  }
-
-  @AfterClass
-  public static void teardown() {
-    container.stop();
-  }
-
-  @Before
-  public void before() throws IOException, ExecutionException, InterruptedException {
     kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container);
-    topologyAdminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
+  }
+
+  @AfterAll
+  public static void teardown() {
+    kafkaAdminClient.close();
+  }
+
+  @BeforeEach
+  public void before() throws IOException, ExecutionException, InterruptedException {
+    TopologyBuilderAdminClient topologyAdminClient =
+        new TopologyBuilderAdminClient(kafkaAdminClient);
     topologyAdminClient.clearAcls();
     TestUtils.deleteStateFile();
 
@@ -78,18 +80,17 @@ public class QuotasManagerIT {
 
     Configuration config = new Configuration(cliOps, props);
 
-    this.cs = new BackendController();
+    BackendController cs = new BackendController();
     this.plan = ExecutionPlan.init(cs, System.out);
 
-    this.topicManager = new TopicManager(topologyAdminClient, null, config);
-    bindingsBuilder = new AclsBindingsBuilder(config);
+    AclsBindingsBuilder bindingsBuilder = new AclsBindingsBuilder(config);
     quotasManager = new QuotasManager(kafkaAdminClient, config);
-    aclsProvider = new SimpleAclsProvider(topologyAdminClient);
+    SimpleAclsProvider aclsProvider = new SimpleAclsProvider(topologyAdminClient);
 
     accessControlManager = new AccessControlManager(aclsProvider, bindingsBuilder, config);
   }
 
-  private Topology woldMSpecPattern() throws ExecutionException, InterruptedException, IOException {
+  private Topology woldMSpecPattern() {
     List<Producer> producers = new ArrayList<>();
     Producer producer = new Producer("User:user1");
     producers.add(producer);
@@ -201,7 +202,7 @@ public class QuotasManagerIT {
   }
 
   private List<Boolean> verifyQuotasOnlyUser(List<Quota> quotas)
-      throws ExecutionException, InterruptedException, IOException {
+      throws ExecutionException, InterruptedException {
     Map<ClientQuotaEntity, Map<String, Double>> cqsresult =
         kafkaAdminClient.describeClientQuotas(ClientQuotaFilter.all()).entities().get();
     return quotas.stream()

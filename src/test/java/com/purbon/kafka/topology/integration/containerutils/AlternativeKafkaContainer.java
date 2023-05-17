@@ -8,6 +8,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * An alternative KafkaContainer that is easier to extend than the one from the testcontainers
  * project version 1.15.0.
@@ -118,7 +120,7 @@ public class AlternativeKafkaContainer extends GenericContainer<AlternativeKafka
             listeners
                 .replaceAll(":" + KAFKA_PORT, ":" + getMappedPort(KAFKA_PORT))
                 .replaceAll("OTHER://0\\.0\\.0\\.0", "OTHER://kafka")
-                .replaceAll("0\\.0\\.0\\.0", getContainerIpAddress()));
+                .replaceAll("0\\.0\\.0\\.0", getHost()));
 
     final String startupScript =
         overrideStartupScript(
@@ -163,10 +165,11 @@ public class AlternativeKafkaContainer extends GenericContainer<AlternativeKafka
             .withAttachStdout(true)
             .exec();
     try {
-      dockerClient
-          .execStartCmd(execCreateCmdResponse.getId())
-          .start()
-          .awaitStarted(10, TimeUnit.SECONDS);
+      assertTrue(
+          dockerClient
+              .execStartCmd(execCreateCmdResponse.getId())
+              .start()
+              .awaitStarted(10, TimeUnit.SECONDS));
     } catch (final InterruptedException e) {
       throw new RuntimeException(e);
     }

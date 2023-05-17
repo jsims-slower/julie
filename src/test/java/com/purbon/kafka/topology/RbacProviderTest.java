@@ -9,7 +9,6 @@ import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.DEVELOPER
 import static org.mockito.Mockito.*;
 
 import com.purbon.kafka.topology.api.mds.MDSApiClient;
-import com.purbon.kafka.topology.api.mds.RequestScope;
 import com.purbon.kafka.topology.model.*;
 import com.purbon.kafka.topology.model.Impl.ProjectImpl;
 import com.purbon.kafka.topology.model.Impl.TopologyImpl;
@@ -27,13 +26,13 @@ import com.purbon.kafka.topology.roles.rbac.ClusterLevelRoleBuilder;
 import com.purbon.kafka.topology.roles.rbac.RBACBindingsBuilder;
 import java.io.IOException;
 import java.util.*;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class RbacProviderTest {
 
   @Mock MDSApiClient apiClient;
@@ -42,13 +41,11 @@ public class RbacProviderTest {
 
   @Mock ClusterLevelRoleBuilder runner;
 
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
-
   private AccessControlManager accessControlManager;
   private RBACProvider aclsProvider;
   private RBACBindingsBuilder bindingsBuilder;
 
-  @Before
+  @BeforeEach
   public void setup() {
     apiClient.setConnectClusterID("kc");
     apiClient.setSchemaRegistryClusterID("sr");
@@ -220,9 +217,6 @@ public class RbacProviderTest {
     doReturn(runner).when(apiClient).bind(eq("User:foo"), anyString());
 
     doReturn(runner).when(runner).forSchemaRegistry();
-    doReturn(new TopologyAclBinding())
-        .when(apiClient)
-        .bindClusterRole(anyString(), anyString(), any(RequestScope.class));
 
     accessControlManager.updatePlan(topology, plan);
 
@@ -250,9 +244,6 @@ public class RbacProviderTest {
     doReturn(runner).when(apiClient).bind(eq("User:foo"), anyString());
 
     doReturn(runner).when(runner).forControlCenter();
-    doReturn(new TopologyAclBinding())
-        .when(apiClient)
-        .bindClusterRole(anyString(), anyString(), any(RequestScope.class));
 
     accessControlManager.updatePlan(topology, plan);
 
@@ -278,10 +269,6 @@ public class RbacProviderTest {
     doReturn(runner).when(apiClient).bind(eq("User:Connect1"), anyString());
 
     doReturn(runner).when(runner).forKafkaConnect(any());
-
-    doReturn(new TopologyAclBinding())
-        .when(apiClient)
-        .bindClusterRole(anyString(), anyString(), any(RequestScope.class));
 
     accessControlManager.updatePlan(topology, plan);
 

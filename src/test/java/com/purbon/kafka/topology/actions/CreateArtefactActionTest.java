@@ -6,17 +6,15 @@ import com.purbon.kafka.topology.clients.ArtefactClient;
 import com.purbon.kafka.topology.model.Artefact;
 import com.purbon.kafka.topology.model.artefact.KafkaConnectArtefact;
 import java.util.ArrayList;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class CreateArtefactActionTest {
 
   @Mock ArtefactClient client;
-
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
   @Test
   public void shouldComposeDetailedViewOfProperties() {

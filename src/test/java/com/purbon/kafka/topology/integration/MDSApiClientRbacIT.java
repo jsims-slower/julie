@@ -5,6 +5,7 @@ import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.DEVELOPER
 import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.RESOURCE_OWNER;
 import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.SECURITY_ADMIN;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.api.mds.AuthenticationCredentials;
 import com.purbon.kafka.topology.api.mds.MDSApiClient;
@@ -13,11 +14,11 @@ import com.purbon.kafka.topology.utils.BasicAuth;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-@Ignore("Zookeeper issues")
+@Disabled("Zookeeper issues")
 public class MDSApiClientRbacIT extends MDSBaseTest {
 
   private final String mdsUser = "professor";
@@ -25,7 +26,7 @@ public class MDSApiClientRbacIT extends MDSBaseTest {
 
   private MDSApiClient apiClient;
 
-  @Before
+  @BeforeEach
   public void before() throws IOException, InterruptedException {
     super.beforeEach();
     String mdsServer = "http://localhost:8090";
@@ -40,10 +41,10 @@ public class MDSApiClientRbacIT extends MDSBaseTest {
     assertThat(credentials.getAuthToken()).isNotEmpty();
   }
 
-  @Test(expected = IOException.class)
-  public void testWithWrongMDSLogin() throws IOException {
+  @Test
+  public void testWithWrongMDSLogin() {
     apiClient.setBasicAuth(new BasicAuth("wrong-user", "wrong-password"));
-    apiClient.authenticate();
+    assertThrows(IOException.class, apiClient::authenticate);
   }
 
   @Test
@@ -71,14 +72,14 @@ public class MDSApiClientRbacIT extends MDSBaseTest {
     assertThat(roles).containsOnly(DEVELOPER_READ);
   }
 
-  @Test(expected = IOException.class)
-  public void testBindRoleWithoutAuthentication() throws IOException {
+  @Test
+  public void testBindRoleWithoutAuthentication() {
     apiClient.setKafkaClusterId(getKafkaClusterID());
 
     TopologyAclBinding binding =
         apiClient.bind("User:fry", DEVELOPER_READ, "connect-configs", LITERAL);
 
-    apiClient.bindRequest(binding);
+    assertThrows(IOException.class, () -> apiClient.bindRequest(binding));
   }
 
   @Test

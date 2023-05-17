@@ -2,32 +2,29 @@ package com.purbon.kafka.topology;
 
 import static com.purbon.kafka.topology.CommandLineInterface.*;
 import static com.purbon.kafka.topology.Constants.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.purbon.kafka.topology.model.Impl.ProjectImpl;
 import com.purbon.kafka.topology.model.Impl.TopologyImpl;
 import com.purbon.kafka.topology.model.Project;
 import com.purbon.kafka.topology.model.Topic;
 import com.purbon.kafka.topology.model.Topology;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class TopicTest {
 
-  Topology topology;
-  Project project;
+  private final Topology topology = new TopologyImpl();
+  private final Project project = new ProjectImpl("project");
 
-  @Before
+  @BeforeEach
   public void before() {
-    topology = new TopologyImpl();
     topology.setContext("team");
-    project = new ProjectImpl("project");
-    topology.setProjects(Arrays.asList(project));
+    topology.setProjects(Collections.singletonList(project));
   }
 
   @Test

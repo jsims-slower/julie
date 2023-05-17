@@ -3,8 +3,8 @@ package com.purbon.kafka.topology;
 import static com.purbon.kafka.topology.CommandLineInterface.BROKERS_OPTION;
 import static com.purbon.kafka.topology.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
@@ -17,13 +17,14 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class AccessControlProviderFactoryTest {
 
   @Mock TopologyBuilderAdminClient adminClient;
@@ -32,16 +33,17 @@ public class AccessControlProviderFactoryTest {
 
   @Mock MDSApiClient mdsApiClient;
 
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
+  private final Map<String, String> cliOps = new HashMap<>();
+  private final Properties props = new Properties();
 
-  Map<String, String> cliOps;
-  Properties props;
-
-  @Before
+  @BeforeEach
   public void before() {
-    cliOps = new HashMap<>();
     cliOps.put(BROKERS_OPTION, "");
-    props = new Properties();
+  }
+
+  @AfterEach
+  public void after() {
+    verifyNoMoreInteractions(adminClient, mdsApiClientBuilder, mdsApiClient);
   }
 
   @Test
@@ -79,7 +81,7 @@ public class AccessControlProviderFactoryTest {
     assertThat(factory.get()).isInstanceOf(SimpleAclsProvider.class);
   }
 
-  @Test(expected = IOException.class)
+  @Test
   public void testWrongProviderConfig() throws IOException {
 
     props.put(
@@ -87,10 +89,8 @@ public class AccessControlProviderFactoryTest {
 
     Configuration config = new Configuration(cliOps, props);
 
-    when(mdsApiClientBuilder.build()).thenReturn(mdsApiClient);
-
     AccessControlProviderFactory factory =
         new AccessControlProviderFactory(config, adminClient, mdsApiClientBuilder);
-    factory.get();
+    assertThrows(IOException.class, factory::get);
   }
 }

@@ -7,7 +7,8 @@ import static com.purbon.kafka.topology.Constants.JULIE_HTTP_BACKOFF_TIME_MS;
 import static com.purbon.kafka.topology.Constants.JULIE_HTTP_RETRY_TIMES;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.purbon.kafka.topology.Configuration;
 import com.purbon.kafka.topology.utils.PTHttpClient;
 import java.io.IOException;
@@ -15,29 +16,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+@WireMockTest(httpPort = 8089)
 public class JulieHttpClientTest {
 
-  @Rule public WireMockRule wireMockRule = new WireMockRule(8089);
-
-  private Map<String, String> cliOps;
-  private Properties props;
+  private Map<String, String> cliOps = new HashMap<>();
+  private Properties props = new Properties();
 
   private PTHttpClient client;
 
-  @Before
-  public void before() throws IOException {
-    cliOps = new HashMap<>();
+  @BeforeEach
+  public void before(WireMockRuntimeInfo wireMockRuntimeInfo) throws IOException {
     cliOps.put(BROKERS_OPTION, "");
-    props = new Properties();
 
     props.put(JULIE_HTTP_BACKOFF_TIME_MS, 0);
     Configuration config = new Configuration(cliOps, props);
 
-    client = new PTHttpClient(wireMockRule.baseUrl(), Optional.of(config));
+    client = new PTHttpClient(wireMockRuntimeInfo.getHttpBaseUrl(), Optional.of(config));
   }
 
   @Test
@@ -52,7 +49,8 @@ public class JulieHttpClientTest {
   }
 
   @Test
-  public void shouldRunTheRetryFlowForRetrievableErrorCodes() throws IOException {
+  public void shouldRunTheRetryFlowForRetrievableErrorCodes(WireMockRuntimeInfo wireMockRuntimeInfo)
+      throws IOException {
 
     cliOps = new HashMap<>();
     cliOps.put(BROKERS_OPTION, "");
@@ -62,7 +60,7 @@ public class JulieHttpClientTest {
     props.put(JULIE_HTTP_RETRY_TIMES, 5);
     Configuration config = new Configuration(cliOps, props);
 
-    client = new PTHttpClient(wireMockRule.baseUrl(), Optional.of(config));
+    client = new PTHttpClient(wireMockRuntimeInfo.getHttpBaseUrl(), Optional.of(config));
 
     stubFor(
         get(urlEqualTo("/some/thing"))

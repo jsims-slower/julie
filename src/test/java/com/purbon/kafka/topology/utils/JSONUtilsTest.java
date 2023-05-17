@@ -1,19 +1,16 @@
 package com.purbon.kafka.topology.utils;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class JSONUtilsTest {
-
-  @Before
-  public void setup() {}
 
   @Test
   public void testToMapDeserialization() throws JsonProcessingException {
@@ -46,6 +43,6 @@ public class JSONUtilsTest {
 
     List<String> jsonAsList = JSON.toArray(jsonAsString);
     assertEquals("1", jsonAsList.get(0));
-    assertEquals(ArrayList.class, jsonAsList.getClass());
+    assertThat(jsonAsList).isInstanceOf(ArrayList.class);
   }
 }

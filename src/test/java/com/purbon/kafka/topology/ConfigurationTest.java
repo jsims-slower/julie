@@ -5,6 +5,7 @@ import static com.purbon.kafka.topology.CommandLineInterface.CLIENT_CONFIG_OPTIO
 import static com.purbon.kafka.topology.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.api.ksql.KsqlClientConfig;
 import com.purbon.kafka.topology.exceptions.ConfigurationException;
@@ -21,23 +22,21 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Condition;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ConfigurationTest {
 
-  private Map<String, String> cliOps;
-  private Properties props;
+  private final Map<String, String> cliOps = new HashMap<>();
+  private final Properties props = new Properties();
 
-  @Before
+  @BeforeEach
   public void before() {
-    cliOps = new HashMap<>();
     cliOps.put(BROKERS_OPTION, "");
-    props = new Properties();
   }
 
   @Test
-  public void testWithAllRequiredFields() throws ConfigurationException {
+  public void testWithAllRequiredFields() {
     Topology topology = new TopologyImpl();
 
     props.put(ACCESS_CONTROL_IMPLEMENTATION_CLASS, RBAC_ACCESS_CONTROL_CLASS);
@@ -50,8 +49,8 @@ public class ConfigurationTest {
     config.validateWith(topology);
   }
 
-  @Test(expected = ConfigurationException.class)
-  public void testSchemaRegistryConfigFields() throws ConfigurationException {
+  @Test
+  public void testSchemaRegistryConfigFields() {
     Topology topology = new TopologyImpl();
     Project project = new ProjectImpl();
     Topic topic = new Topic();
@@ -62,11 +61,11 @@ public class ConfigurationTest {
     props.put(CONFLUENT_SCHEMA_REGISTRY_URL_CONFIG, "mock://");
 
     Configuration config = new Configuration(cliOps, props);
-    config.validateWith(topology);
+    assertThrows(ConfigurationException.class, () -> config.validateWith(topology));
   }
 
   @Test
-  public void testSchemaRegistryValidConfigFields() throws ConfigurationException {
+  public void testSchemaRegistryValidConfigFields() {
     Topology topology = new TopologyImpl();
     Project project = new ProjectImpl();
     Topic topic = new Topic();
@@ -82,7 +81,7 @@ public class ConfigurationTest {
   }
 
   @Test
-  public void testSchemaRegistryValidConfigButNoSchemas() throws ConfigurationException {
+  public void testSchemaRegistryValidConfigButNoSchemas() {
     Topology topology = new TopologyImpl();
     Project project = new ProjectImpl();
     Topic topic = new Topic();
@@ -96,7 +95,7 @@ public class ConfigurationTest {
   }
 
   @Test
-  public void testNoSchemaRegistry() throws ConfigurationException {
+  public void testNoSchemaRegistry() {
     Topology topology = new TopologyImpl();
     Project project = new ProjectImpl("project");
     Topic topic = new Topic("topic", "json");
@@ -108,7 +107,7 @@ public class ConfigurationTest {
   }
 
   @Test
-  public void testPrefixValidConfigFields() throws ConfigurationException {
+  public void testPrefixValidConfigFields() {
     Topology topology = new TopologyImpl();
     Project project = new ProjectImpl();
     Topic topic = new Topic();
@@ -122,8 +121,8 @@ public class ConfigurationTest {
     config.validateWith(topology);
   }
 
-  @Test(expected = ConfigurationException.class)
-  public void testMissingPrefixValidConfigFields() throws ConfigurationException {
+  @Test
+  public void testMissingPrefixValidConfigFields() {
     Topology topology = new TopologyImpl();
     Project project = new ProjectImpl();
     Topic topic = new Topic();
@@ -133,11 +132,11 @@ public class ConfigurationTest {
     props.put(TOPIC_PREFIX_FORMAT_CONFIG, "{{foo}}{{topic}}");
 
     Configuration config = new Configuration(cliOps, props);
-    config.validateWith(topology);
+    assertThrows(ConfigurationException.class, () -> config.validateWith(topology));
   }
 
-  @Test(expected = ConfigurationException.class)
-  public void testMissingTopicPrefixValidConfigFields() throws ConfigurationException {
+  @Test
+  public void testMissingTopicPrefixValidConfigFields() {
     Topology topology = new TopologyImpl();
     Project project = new ProjectImpl();
     Topic topic = new Topic();
@@ -147,11 +146,11 @@ public class ConfigurationTest {
     props.put(PROJECT_PREFIX_FORMAT_CONFIG, "{{foo}}{{topic}}");
 
     Configuration config = new Configuration(cliOps, props);
-    config.validateWith(topology);
+    assertThrows(ConfigurationException.class, () -> config.validateWith(topology));
   }
 
-  @Test(expected = ConfigurationException.class)
-  public void testIncompatiblePrefixValidConfigFields() throws ConfigurationException {
+  @Test
+  public void testIncompatiblePrefixValidConfigFields() {
     Topology topology = new TopologyImpl();
     Project project = new ProjectImpl();
     Topic topic = new Topic();
@@ -161,7 +160,7 @@ public class ConfigurationTest {
     props.put(PROJECT_PREFIX_FORMAT_CONFIG, "{{banana}}");
 
     Configuration config = new Configuration(cliOps, props);
-    config.validateWith(topology);
+    assertThrows(ConfigurationException.class, () -> config.validateWith(topology));
   }
 
   @Test
@@ -229,12 +228,12 @@ public class ConfigurationTest {
     assertThat(role.getAcls()).hasSize(2);
   }
 
-  @Test(expected = IOException.class)
-  public void testWrongFileJulieRoles() throws IOException {
+  @Test
+  public void testWrongFileJulieRoles() {
     String rolesFile = TestUtils.getResourceFilename("/descriptor.yaml");
     props.put(JULIE_ROLES, rolesFile);
     Configuration config = new Configuration(cliOps, props);
-    config.getJulieRoles();
+    assertThrows(IOException.class, config::getJulieRoles);
   }
 
   @Test
@@ -304,35 +303,34 @@ public class ConfigurationTest {
   }
 
   @Test
-  public void nonEmptyTopicManagedPrefixConfigsShouldValidateSuccessfully()
-      throws ConfigurationException {
+  public void nonEmptyTopicManagedPrefixConfigsShouldValidateSuccessfully() {
     var topology = TestTopologyBuilder.createProject().buildTopology();
     props.put(TOPIC_MANAGED_PREFIXES + ".0", "foo");
     Configuration config = new Configuration(cliOps, props);
     config.validateWith(topology);
   }
 
-  @Test(expected = ConfigurationException.class)
-  public void emptyTopicManagedPrefixConfigsShouldRaiseAnError() throws ConfigurationException {
+  @Test
+  public void emptyTopicManagedPrefixConfigsShouldRaiseAnError() {
     var topology = TestTopologyBuilder.createProject().buildTopology();
     props.put(TOPIC_MANAGED_PREFIXES + ".0", "");
     Configuration config = new Configuration(cliOps, props);
-    config.validateWith(topology);
+    assertThrows(ConfigurationException.class, () -> config.validateWith(topology));
   }
 
-  @Test(expected = ConfigurationException.class)
-  public void emptyGroupManagedPrefixConfigsShouldRaiseAnError() throws ConfigurationException {
+  @Test
+  public void emptyGroupManagedPrefixConfigsShouldRaiseAnError() {
     var topology = TestTopologyBuilder.createProject().buildTopology();
     props.put(GROUP_MANAGED_PREFIXES + ".0", "");
     Configuration config = new Configuration(cliOps, props);
-    config.validateWith(topology);
+    assertThrows(ConfigurationException.class, () -> config.validateWith(topology));
   }
 
-  @Test(expected = ConfigurationException.class)
-  public void emptySaManagedPrefixConfigsShouldRaiseAnError() throws ConfigurationException {
+  @Test
+  public void emptySaManagedPrefixConfigsShouldRaiseAnError() {
     var topology = TestTopologyBuilder.createProject().buildTopology();
     props.put(SERVICE_ACCOUNT_MANAGED_PREFIXES + ".0", "");
     Configuration config = new Configuration(cliOps, props);
-    config.validateWith(topology);
+    assertThrows(ConfigurationException.class, () -> config.validateWith(topology));
   }
 }

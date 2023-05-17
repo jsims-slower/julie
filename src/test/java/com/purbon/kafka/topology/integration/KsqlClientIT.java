@@ -12,28 +12,17 @@ import com.purbon.kafka.topology.integration.containerutils.SaslPlaintextKafkaCo
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class KsqlClientIT {
+  @Container
+  private static final SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
 
-  static SaslPlaintextKafkaContainer container;
-  static KsqlContainer ksqlContainer;
-
-  @After
-  public void after() {
-    ksqlContainer.stop();
-    container.stop();
-  }
-
-  @Before
-  public void configure() {
-    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
-    container.start();
-    ksqlContainer = new KsqlContainer(container);
-    ksqlContainer.start();
-  }
+  @Container private static final KsqlContainer ksqlContainer = new KsqlContainer(container);
 
   @Test
   public void testStreamTableCreateAndDelete() throws IOException {

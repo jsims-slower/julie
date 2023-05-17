@@ -6,7 +6,8 @@ import static com.purbon.kafka.topology.Constants.*;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.purbon.kafka.topology.actions.Action;
@@ -31,13 +32,18 @@ import org.apache.kafka.common.acl.AclOperation;
 import org.apache.kafka.common.acl.AclPermissionType;
 import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourceType;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.*;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class AccessControlManagerTest {
 
   @Mock SimpleAclsProvider aclsProvider;
@@ -53,16 +59,14 @@ public class AccessControlManagerTest {
 
   ExecutionPlan plan;
 
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
-
   private AccessControlManager accessControlManager;
 
-  @Before
+  @BeforeEach
   public void setup() throws IOException {
     TestUtils.deleteStateFile();
     plan = ExecutionPlan.init(backendController, mockPrintStream);
     accessControlManager = new AccessControlManager(aclsProvider, aclsBuilder);
-    doNothing().when(backendController).addBindings(ArgumentMatchers.anyList());
+    doNothing().when(backendController).addBindings(anyList());
     doNothing().when(backendController).flushAndClose();
   }
 
@@ -272,7 +276,7 @@ public class AccessControlManagerTest {
     verify(aclsBuilder, times(1)).buildBindingsForKSqlApp(app, "default.default.");
   }
 
-  @Test(expected = IOException.class)
+  @Test
   public void testkStreamAclsCreationWithMissingPrefixGroup() throws Exception {
 
     Properties props = new Properties();
@@ -307,7 +311,7 @@ public class AccessControlManagerTest {
     topology.addOther("source", "kstreamsAclsCreation");
     topology.addProject(project);
 
-    accessControlManager.updatePlan(topology, plan);
+    assertThrows(IOException.class, () -> accessControlManager.updatePlan(topology, plan));
   }
 
   @Test
@@ -509,7 +513,7 @@ public class AccessControlManagerTest {
 
     builder.removeConsumer("User:app2");
 
-    Mockito.reset(aclsProvider);
+    reset(aclsProvider);
     plan = ExecutionPlan.init(backendController, mockPrintStream);
     doReturn(mapBindings(plan)).when(aclsProvider).listAcls();
 
@@ -538,7 +542,7 @@ public class AccessControlManagerTest {
 
     builder.removeConsumer("User:app2");
 
-    Mockito.reset(aclsProvider);
+    reset(aclsProvider);
     plan = ExecutionPlan.init(backendController, mockPrintStream);
     doReturn(mapBindings(plan)).when(aclsProvider).listAcls();
 
@@ -826,7 +830,7 @@ public class AccessControlManagerTest {
             .count());
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test
   public void testWrongJulieRoleAclCreation() throws IOException {
     Topic topicA = new Topic("topicA");
     Topology topology =
@@ -848,7 +852,8 @@ public class AccessControlManagerTest {
         new AccessControlManager(
             aclsProvider, new AclsBindingsBuilder(config), config.getJulieRoles(), config);
 
-    accessControlManager.updatePlan(topology, plan);
+    assertThrows(
+        IllegalStateException.class, () -> accessControlManager.updatePlan(topology, plan));
   }
 
   private List<BaseAccessControlAction> getAccessControlActions(ExecutionPlan plan) {

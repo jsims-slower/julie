@@ -13,10 +13,12 @@ import com.purbon.kafka.topology.integration.containerutils.TestStreams;
 import java.util.Set;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public final class StreamsAclIT {
 
   public static final String TOPIC_A = "topic-A";
@@ -29,23 +31,17 @@ public final class StreamsAclIT {
   private static final String STREAMS_USERNAME = "streamsapp";
   private static final String CONSUMER_GROUP = "streams-consumer-test-consumer-group";
 
-  private static SaslPlaintextKafkaContainer container;
+  @Container
+  private static final SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"))
+          .withUser(PRODUCER_USERNAME)
+          .withUser(CONSUMER_USERNAME)
+          .withUser(STREAMS_USERNAME);
 
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() {
-    container =
-        ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"))
-            .withUser(PRODUCER_USERNAME)
-            .withUser(CONSUMER_USERNAME)
-            .withUser(STREAMS_USERNAME);
-    container.start();
     ContainerTestUtils.populateAcls(
         container, "/streams-acl-it.yaml", "/integration-tests.properties");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    container.stop();
   }
 
   @Test

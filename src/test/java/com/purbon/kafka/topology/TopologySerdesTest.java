@@ -7,7 +7,8 @@ import static com.purbon.kafka.topology.model.SubjectNameStrategy.TOPIC_RECORD_N
 import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.DEVELOPER_READ;
 import static com.purbon.kafka.topology.roles.rbac.RBACPredefinedRoles.RESOURCE_OWNER;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.exceptions.TopologyParsingException;
 import com.purbon.kafka.topology.model.*;
@@ -33,14 +34,14 @@ import com.purbon.kafka.topology.utils.TestUtils;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class TopologySerdesTest {
 
   private TopologySerdes parser;
 
-  @Before
+  @BeforeEach
   public void setup() {
     Properties props = new Properties();
     props.put(PLATFORM_SERVERS_CONNECT + ".0", "connector0:foo");
@@ -85,9 +86,11 @@ public class TopologySerdesTest {
     }
   }
 
-  @Test(expected = TopologyParsingException.class)
+  @Test
   public void testStreamsParsingOnlyWriteTopicsShoulRaiseAnException() {
-    parser.deserialise(TestUtils.getResourceFile("/descriptor-streams-only-write.yaml"));
+    assertThrows(
+        TopologyParsingException.class,
+        () -> parser.deserialise(TestUtils.getResourceFile("/descriptor-streams-only-write.yaml")));
   }
 
   @Test
@@ -210,9 +213,11 @@ public class TopologySerdesTest {
     assertEquals(topic2.getDataType(), serdesTopic2.getDataType());
   }
 
-  @Test(expected = TopologyParsingException.class)
+  @Test
   public void testTopologyWithNoTeam() {
-    parser.deserialise(TestUtils.getResourceFile("/descriptor-with-no-context.yaml"));
+    assertThrows(
+        TopologyParsingException.class,
+        () -> parser.deserialise(TestUtils.getResourceFile("/descriptor-with-no-context.yaml")));
   }
 
   @Test
@@ -255,9 +260,11 @@ public class TopologySerdesTest {
         .allMatch(s -> s.getApplicationId().orElse("notFound").equals("applicationId-1"));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testInvalidSchemaSerdes() {
-    parser.deserialise(TestUtils.getResourceFile("/descriptor-wrong-schemas.yaml"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> parser.deserialise(TestUtils.getResourceFile("/descriptor-wrong-schemas.yaml")));
   }
 
   @Test
@@ -703,7 +710,7 @@ public class TopologySerdesTest {
 
     assertEquals("contextOrg.source.foo.bar.avro", mainTopic.toString());
     assertEquals("contextOrg.source.foo.bar.avro.dlq", dlqTopic.toString());
-    assertThat(mainTopic.getConfig()).isEqualToComparingFieldByField(dlqTopic.getConfig());
+    assertThat(mainTopic.getConfig()).usingRecursiveComparison().isEqualTo(dlqTopic.getConfig());
   }
 
   @Test
@@ -760,9 +767,11 @@ public class TopologySerdesTest {
     assertEquals("contextOrg.source.bar.bar.avro", p.getTopics().get(0).toString());
   }
 
-  @Test(expected = TopologyParsingException.class)
+  @Test
   public void testTopicNameWithUTFCharacters() {
-    parser.deserialise(TestUtils.getResourceFile("/descriptor-only-topics-utf.yaml"));
+    assertThrows(
+        TopologyParsingException.class,
+        () -> parser.deserialise(TestUtils.getResourceFile("/descriptor-only-topics-utf.yaml")));
   }
 
   @Test
@@ -843,9 +852,9 @@ public class TopologySerdesTest {
 
   private void assertSchemas(
       Schemas schemas, String principal, List<String> subjects, String role, boolean prefixed) {
-    assertEquals("Schemas principal", principal, schemas.getPrincipal());
-    assertEquals("Schemas subjects", subjects, schemas.getSubjects());
-    assertEquals("Schemas role", role, schemas.getRole());
-    assertEquals("Schemas isPrefixed", prefixed, schemas.isPrefixed());
+    assertEquals(principal, schemas.getPrincipal(), "Schemas principal");
+    assertEquals(subjects, schemas.getSubjects(), "Schemas subjects");
+    assertEquals(role, schemas.getRole(), "Schemas role");
+    assertEquals(prefixed, schemas.isPrefixed(), "Schemas isPrefixed");
   }
 }

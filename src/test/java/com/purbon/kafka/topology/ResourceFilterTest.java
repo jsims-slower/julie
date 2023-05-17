@@ -10,7 +10,7 @@ import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.util.HashMap;
 import java.util.Properties;
 import org.apache.kafka.common.resource.ResourceType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ResourceFilterTest {
 

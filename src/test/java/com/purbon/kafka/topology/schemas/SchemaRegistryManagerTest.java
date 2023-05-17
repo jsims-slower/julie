@@ -1,6 +1,7 @@
 package com.purbon.kafka.topology.schemas;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.schemas.SchemaRegistryManager.SchemaRegistryManagerException;
 import io.confluent.kafka.schemaregistry.CompatibilityLevel;
@@ -21,11 +22,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class SchemaRegistryManagerTest {
 
@@ -37,9 +35,7 @@ public class SchemaRegistryManagerTest {
 
   private Path rootDir;
 
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
-
-  @Before
+  @BeforeEach
   public void before() {
     List<SchemaProvider> providers =
         Arrays.asList(
@@ -91,10 +87,12 @@ public class SchemaRegistryManagerTest {
     assertThat(client.getCompatibility(subjectName)).isEqualTo("FORWARD");
   }
 
-  @Test(expected = SchemaRegistryManagerException.class)
+  @Test
   public void shouldThrowAnExceptionWithFailedFilePath() {
     Path schemaFilePath = manager.schemaFilePath("schemas/wrong-file-value.avsc");
-    manager.readSchemaFile(AvroSchema.TYPE, schemaFilePath);
+    assertThrows(
+        SchemaRegistryManagerException.class,
+        () -> manager.readSchemaFile(AvroSchema.TYPE, schemaFilePath));
   }
 
   @Test
@@ -245,10 +243,12 @@ public class SchemaRegistryManagerTest {
     assertThat(client.testCompatibility(subjectName, parsedUpdatedSampleSchema)).isFalse();
   }
 
-  @Test(expected = SchemaRegistryManager.SchemaRegistryManagerException.class)
+  @Test
   public void shouldFailForTheUnknownType() {
 
     final String unknownSchemaType = "bunch-of-monkeys";
-    manager.parseSchema(unknownSchemaType, simpleSchema);
+    assertThrows(
+        SchemaRegistryManager.SchemaRegistryManagerException.class,
+        () -> manager.parseSchema(unknownSchemaType, simpleSchema));
   }
 }

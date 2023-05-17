@@ -13,24 +13,28 @@ import com.purbon.kafka.topology.integration.containerutils.SaslPlaintextKafkaCo
 import com.purbon.kafka.topology.model.Artefact;
 import com.purbon.kafka.topology.model.artefact.KafkaConnectArtefact;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import java.util.*;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+@Testcontainers
 public class ConnectApiClientIT {
-
-  static SaslPlaintextKafkaContainer container;
-  static ConnectContainer connectContainer;
-
-  KConnectApiClient client;
 
   private static final String TRUSTSTORE_JKS = "/ksql-ssl/truststore/ksqldb.truststore.jks";
   private static final String KEYSTORE_JKS = "/ksql-ssl/keystore/ksqldb.keystore.jks";
+
+  @Container
+  static SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
+
+  @Container
+  static ConnectContainer connectContainer =
+      new ConnectContainer(container, TRUSTSTORE_JKS, KEYSTORE_JKS);
+
+  KConnectApiClient client;
 
   private final String connectorName = "file-source-connector";
   private final String connectorConfig =
@@ -41,24 +45,9 @@ public class ConnectApiClientIT {
           + "        \"topic\": \"connect-test\"\n"
           + "}";
 
-  @BeforeClass
-  public static void setup() {
-    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
-    container.start();
-    connectContainer = new ConnectContainer(container, TRUSTSTORE_JKS, KEYSTORE_JKS);
-    connectContainer.start();
-  }
-
-  @AfterClass
-  public static void after() {
-    connectContainer.stop();
-    container.stop();
-  }
-
-  @Before
+  @BeforeEach
   public void configure() throws IOException {
-    HashMap<String, String> cliOps = new HashMap<>();
-    cliOps.put(BROKERS_OPTION, "");
+    Map<String, String> cliOps = Collections.singletonMap(BROKERS_OPTION, "");
     Configuration config = new Configuration(cliOps, new Properties());
     client = new KConnectApiClient(connectContainer.getHttpUrl(), config);
   }

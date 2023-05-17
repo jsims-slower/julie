@@ -9,23 +9,15 @@ import static org.mockito.Mockito.verify;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class CLITest {
 
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
-
-  private CommandLineInterface cli;
-
-  @Before
-  public void setup() {
-    cli = Mockito.spy(new CommandLineInterface());
-  }
+  @Spy private CommandLineInterface cli;
 
   @Test
   public void testParamPassing() throws Exception {

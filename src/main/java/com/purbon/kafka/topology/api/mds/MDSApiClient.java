@@ -23,13 +23,11 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.resource.ResourceType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Slf4j
 public class MDSApiClient extends JulieHttpClient {
-
-  private static final Logger LOGGER = LogManager.getLogger(MDSApiClient.class);
 
   private AuthenticationCredentials authenticationCredentials;
   private final ClusterIDs clusterIDs;
@@ -61,7 +59,7 @@ public class MDSApiClient extends JulieHttpClient {
 
   @SneakyThrows
   private HttpClient trustAllClient() {
-    LOGGER.info("MDS running with trust all connections");
+    log.info("MDS running with trust all connections");
     final Properties props = System.getProperties();
     props.setProperty(
         "jdk.internal.httpclient.disableHostnameVerification", Boolean.TRUE.toString());
@@ -102,7 +100,7 @@ public class MDSApiClient extends JulieHttpClient {
               response.getField("token_type").toString(),
               Integer.valueOf(response.getField("expires_in").toString()));
     } catch (Exception e) {
-      LOGGER.error(e);
+      log.error("{}", e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -151,7 +149,7 @@ public class MDSApiClient extends JulieHttpClient {
     } else {
       jsonEntity = binding.getScope().clustersAsJson();
     }
-    LOGGER.debug("bind.entity: " + jsonEntity);
+    log.debug("bind.entity: {}", jsonEntity);
 
     return new MDSRequest(url, jsonEntity);
   }
@@ -159,10 +157,10 @@ public class MDSApiClient extends JulieHttpClient {
   public void bindRequest(TopologyAclBinding binding) throws IOException {
     MDSRequest mdsRequest = buildRequest(binding);
     try {
-      LOGGER.debug("bind.entity: " + mdsRequest.getJsonEntity());
+      log.debug("bind.entity: {}", mdsRequest.getJsonEntity());
       doPost("/security/1.0/principals/" + mdsRequest.getUrl(), mdsRequest.getJsonEntity());
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error("{}", e.getMessage(), e);
       throw e;
     }
   }
@@ -245,7 +243,7 @@ public class MDSApiClient extends JulieHttpClient {
         users = JSON.toArray(response);
       }
     } catch (IOException ex) {
-      LOGGER.error(ex);
+      log.error("{}", ex.getMessage(), ex);
     }
     return users;
   }
@@ -263,7 +261,7 @@ public class MDSApiClient extends JulieHttpClient {
         roles = JSON.toArray(response);
       }
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error("{}", e.getMessage(), e);
     }
 
     return roles;
@@ -294,7 +292,7 @@ public class MDSApiClient extends JulieHttpClient {
         resources = (List<RbacResourceType>) JSON.toObjectList(response, RbacResourceType.class);
       }
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error("{}", e.getMessage(), e);
     }
 
     return resources;
@@ -308,7 +306,7 @@ public class MDSApiClient extends JulieHttpClient {
       String[] myRoles = (String[]) JSON.toObject(response.getResponseAsString(), String[].class);
       roles = Arrays.asList(myRoles);
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error("{}", e.getMessage(), e);
     }
     return roles;
   }

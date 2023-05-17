@@ -3,7 +3,8 @@ package com.purbon.kafka.topology.integration;
 import static com.purbon.kafka.topology.CommandLineInterface.*;
 import static com.purbon.kafka.topology.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.BackendController;
 import com.purbon.kafka.topology.Configuration;
@@ -21,11 +22,10 @@ import com.purbon.kafka.topology.model.Project;
 import com.purbon.kafka.topology.model.Topic;
 import com.purbon.kafka.topology.model.Topology;
 import com.purbon.kafka.topology.schemas.SchemaRegistryManager;
+import com.purbon.kafka.topology.utils.TestUtils;
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
@@ -36,34 +36,25 @@ import org.apache.kafka.clients.admin.ConfigEntry;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.config.ConfigResource.Type;
-import org.junit.*;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.junit.jupiter.api.*;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class TopicManagerIT {
 
-  private static SaslPlaintextKafkaContainer container;
+  @Container
+  private static SaslPlaintextKafkaContainer container =
+      ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
+
   private TopicManager topicManager;
   private AdminClient kafkaAdminClient;
 
   private ExecutionPlan plan;
 
-  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
-
-  @BeforeClass
-  public static void setup() {
-    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
-    container.start();
-  }
-
-  @AfterClass
-  public static void teardown() {
-    container.stop();
-  }
-
-  @Before
+  @BeforeEach
   public void before() throws IOException {
-    Files.deleteIfExists(Paths.get(".cluster-state"));
+    TestUtils.deleteStateFile();
 
     kafkaAdminClient = ContainerTestUtils.getSaslAdminClient(container);
     TopologyBuilderAdminClient adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
@@ -83,6 +74,11 @@ public class TopicManagerIT {
     Configuration config = new Configuration(cliOps, props);
 
     this.topicManager = new TopicManager(adminClient, schemaRegistryManager, config);
+  }
+
+  @AfterEach
+  public void after() {
+    kafkaAdminClient.close();
   }
 
   @Test
@@ -113,7 +109,7 @@ public class TopicManagerIT {
     verifyTopics(topicA.toString(), topicB.toString());
   }
 
-  @Test(expected = RemoteValidationException.class)
+  @Test
   public void topicManagerShouldDetectDeletedTopicsBetweenRuns() throws IOException {
 
     TopologyBuilderAdminClient adminClient = new TopologyBuilderAdminClient(kafkaAdminClient);
@@ -144,7 +140,7 @@ public class TopicManagerIT {
     plan.run();
 
     adminClient.deleteTopics(Collections.singletonList("ctx.project.topic1"));
-    topicManager.updatePlan(topology, plan);
+    assertThrows(RemoteValidationException.class, () -> topicManager.updatePlan(topology, plan));
   }
 
   @Test
@@ -167,7 +163,7 @@ public class TopicManagerIT {
     verifyTopics(topicA.toString(), topicB.toString());
   }
 
-  @Test(expected = IOException.class)
+  @Test
   public void testTopicCreationWithFalseConfig() throws IOException {
     HashMap<String, String> config = new HashMap<>();
     config.put("num.partitions", "1");
@@ -183,7 +179,7 @@ public class TopicManagerIT {
     project.addTopic(topicA);
 
     topicManager.updatePlan(topology, plan);
-    plan.run();
+    assertThrows(IOException.class, () -> plan.run());
   }
 
   @Test

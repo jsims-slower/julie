@@ -5,14 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class MDSApiClientTest {
 
   private MDSApiClient apiClient;
 
-  @Before
+  @BeforeEach
   public void before() throws IOException {
     apiClient = new MDSApiClient("http://not_used:8090");
   }

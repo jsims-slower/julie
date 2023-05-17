@@ -3,22 +3,17 @@ package com.purbon.kafka.topology;
 import static com.purbon.kafka.topology.CommandLineInterface.*;
 import static com.purbon.kafka.topology.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.purbon.kafka.topology.model.Topology;
 import com.purbon.kafka.topology.serdes.TopologySerdes;
 import com.purbon.kafka.topology.utils.TestUtils;
 import java.util.*;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TopologyValidationTest {
 
-  private TopologySerdes parser;
-
-  @Before
-  public void setup() {
-    parser = new TopologySerdes();
-  }
+  private final TopologySerdes parser = new TopologySerdes();
 
   @Test
   public void testPositiveExecutionOnCamelCaseNames() {
@@ -89,7 +84,8 @@ public class TopologyValidationTest {
     assertThat(results).hasSize(1);
   }
 
-  @Test(expected = IllegalStateException.class)
+  // TODO: Where does this throw?
+  @Test // (expected = IllegalStateException.class)
   public void testUsingDeprecatedValidationsConfig() {
 
     Topology topology = parser.deserialise(TestUtils.getResourceFile("/descriptor.yaml"));
@@ -97,12 +93,10 @@ public class TopologyValidationTest {
     Configuration config = createTopologyBuilderConfig("topology.CamelCaseNameFormatValidation");
 
     TopologyValidator validator = new TopologyValidator(config);
-    List<String> results = validator.validate(topology);
-    assertThat(results).hasSize(1);
-    assertThat(results.get(0)).isEqualTo("Project name does not follow the camelCase format: foo");
+    assertThrows(IllegalStateException.class, () -> validator.validate(topology));
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test
   public void testUsingUnknownClassName() {
 
     Topology topology = parser.deserialise(TestUtils.getResourceFile("/descriptor.yaml"));
@@ -110,7 +104,7 @@ public class TopologyValidationTest {
     Configuration config = createTopologyBuilderConfig("not.available.Validation");
 
     TopologyValidator validator = new TopologyValidator(config);
-    validator.validate(topology);
+    assertThrows(IllegalStateException.class, () -> validator.validate(topology));
   }
 
   private Configuration createTopologyBuilderConfig(String... validations) {

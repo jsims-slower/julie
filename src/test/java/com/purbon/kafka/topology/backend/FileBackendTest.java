@@ -1,6 +1,5 @@
 package com.purbon.kafka.topology.backend;
 
-import static com.purbon.kafka.topology.BackendController.STATE_FILE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -15,29 +14,28 @@ import com.purbon.kafka.topology.utils.TestUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import org.apache.kafka.common.acl.AclOperation;
 import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourceType;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class FileBackendTest {
 
   private FileBackend backend;
 
-  @Before
+  @BeforeEach
   public void setup() {
     backend = new FileBackend();
   }
 
-  @After
+  @AfterEach
   public void after() throws IOException {
-    Files.deleteIfExists(Paths.get(STATE_FILE_NAME));
+    TestUtils.deleteStateFile();
   }
 
   @Test
