@@ -3,45 +3,39 @@ package com.purbon.kafka.topology.roles;
 import com.purbon.kafka.topology.AccessControlProvider;
 import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.acl.AclBinding;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Slf4j
+@RequiredArgsConstructor
 public class SimpleAclsProvider implements AccessControlProvider {
-
-  private static final Logger LOGGER = LogManager.getLogger(SimpleAclsProvider.class);
 
   protected final TopologyBuilderAdminClient adminClient;
 
-  public SimpleAclsProvider(final TopologyBuilderAdminClient adminClient) {
-    this.adminClient = adminClient;
-  }
-
   @Override
-  public void createBindings(Set<TopologyAclBinding> bindings) throws IOException {
-    LOGGER.debug("AclsProvider: createBindings");
-    List<AclBinding> bindingsAsNativeKafka =
+  public void createBindings(Collection<TopologyAclBinding> bindings) throws IOException {
+    log.debug("AclsProvider: createBindings");
+    Collection<AclBinding> bindingsAsNativeKafka =
         bindings.stream()
-            .filter(binding -> binding.asAclBinding().isPresent())
-            .map(binding -> binding.asAclBinding().get())
+            .map(TopologyAclBinding::asAclBinding)
+            .flatMap(Optional::stream)
             .collect(Collectors.toList());
-    LOGGER.debug("bindingsAsNativeKafka.size: " + bindingsAsNativeKafka.size());
+    log.debug("bindingsAsNativeKafka.size: {}", bindingsAsNativeKafka.size());
     adminClient.createAcls(bindingsAsNativeKafka);
   }
 
   @Override
-  public void clearBindings(Set<TopologyAclBinding> bindings) throws IOException {
-    LOGGER.debug("AclsProvider: clearAcls");
+  public void clearBindings(Collection<TopologyAclBinding> bindings) throws IOException {
+    log.debug("AclsProvider: clearAcls");
     for (TopologyAclBinding binding : bindings) {
       try {
         adminClient.clearAcls(binding);
       } catch (IOException ex) {
-        LOGGER.error(ex);
+        log.error(ex.getMessage(), ex);
         throw ex;
       }
     }
@@ -49,16 +43,13 @@ public class SimpleAclsProvider implements AccessControlProvider {
 
   @Override
   public Map<String, List<TopologyAclBinding>> listAcls() {
-    Map<String, List<TopologyAclBinding>> map = new HashMap<>();
-    adminClient
-        .fetchAclsList()
-        .forEach(
-            (topic, aclBindings) ->
-                map.put(
-                    topic,
-                    aclBindings.stream()
+    return adminClient.fetchAclsList().entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry ->
+                    entry.getValue().stream()
                         .map(TopologyAclBinding::new)
                         .collect(Collectors.toList())));
-    return map;
   }
 }

@@ -1,6 +1,7 @@
 package com.purbon.kafka.topology.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
@@ -18,20 +19,20 @@ public class JSON {
     mapper.findAndRegisterModules();
   }
 
-  public static Map<String, Object> toMap(String jsonString) throws JsonProcessingException {
-    return mapper.readValue(jsonString, Map.class);
+  public static <T> Map<String, T> toMap(String jsonString) throws JsonProcessingException {
+    return mapper.readValue(jsonString, new TypeReference<>() {});
   }
 
-  public static String asString(Map map) throws JsonProcessingException {
+  public static String asString(Map<?, ?> map) throws JsonProcessingException {
     return mapper.writeValueAsString(map);
   }
 
-  public static String asPrettyString(Map map) throws JsonProcessingException {
+  public static String asPrettyString(Map<?, ?> map) throws JsonProcessingException {
     return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(map);
   }
 
   public static List<String> toArray(String jsonString) throws JsonProcessingException {
-    return mapper.readValue(jsonString, List.class);
+    return mapper.readValue(jsonString, new TypeReference<>() {});
   }
 
   public static String asString(Object object) throws JsonProcessingException {
@@ -42,14 +43,14 @@ public class JSON {
     return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
   }
 
-  public static Object toObjectList(String jsonString, Class objectClazz)
+  public static <T> List<T> toObjectList(String jsonString, Class<T> objectClazz)
       throws JsonProcessingException {
     CollectionType collectionType =
         mapper.getTypeFactory().constructCollectionType(List.class, objectClazz);
     return mapper.readValue(jsonString, collectionType);
   }
 
-  public static Object toObject(String jsonString, Class objectClazz)
+  public static <T> T toObject(String jsonString, Class<T> objectClazz)
       throws JsonProcessingException {
     return mapper.readValue(jsonString, objectClazz);
   }

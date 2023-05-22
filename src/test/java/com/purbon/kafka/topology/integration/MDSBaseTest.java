@@ -8,10 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class MDSBaseTest {
 
-  private ZKClient zkClient;
+  private final ZKClient zkClient= new ZKClient();
 
   public void beforeEach() throws IOException, InterruptedException {
-    zkClient = new ZKClient();
     zkClient.connect("localhost");
   }
 
@@ -21,7 +20,7 @@ public abstract class MDSBaseTest {
       String nodeData = zkClient.getNodeData("/cluster/id");
       return JSON.toMap(nodeData).get("id").toString();
     } catch (IOException e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
     }
     return "-1";
   }

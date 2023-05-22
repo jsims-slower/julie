@@ -26,7 +26,7 @@ public class KConnectApiClient extends JulieHttpClient implements ArtefactClient
     this(server, "", config);
   }
 
-  private String label;
+  private final String label;
 
   public KConnectApiClient(String server, String label, Configuration config) throws IOException {
     super(server, Optional.of(config));
@@ -37,11 +37,6 @@ public class KConnectApiClient extends JulieHttpClient implements ArtefactClient
       String[] values = basicAuths.get(label).split(":");
       setBasicAuth(new BasicAuth(values[0], values[1]));
     }
-  }
-
-  @Override
-  public String getServer() {
-    return server;
   }
 
   @Override
@@ -109,13 +104,13 @@ public class KConnectApiClient extends JulieHttpClient implements ArtefactClient
 
   public String status(String connectorName) throws IOException {
     Response response = doGet("/connectors/" + connectorName + "/status");
-    Map<String, Object> map = JSON.toMap(response.getResponseAsString());
+    Map<String, Map<String, String>> map = JSON.toMap(response.getResponseAsString());
 
     if (map.containsKey("error_code")) {
       throw new IOException(map.get("message").toString());
     }
 
-    return ((Map<String, String>) map.get("connector")).get("state");
+    return map.get("connector").get("state");
   }
 
   public void pause(String connectorName) throws IOException {

@@ -9,7 +9,7 @@ class BackendHelper {
 
   private static final String expression =
       "^\"?\\'(\\S+)\\',\\s*\\'(\\S+)\\',\\s*\\'(\\S+)\\',\\s*\\'(\\S+)\\',\\s*\\'(.+)\\',\\s*\\'(\\S+)\\'\"?$";
-  private static Pattern regexp = Pattern.compile(expression);
+  private static final Pattern regexp = Pattern.compile(expression);
 
   private BackendHelper() {}
 

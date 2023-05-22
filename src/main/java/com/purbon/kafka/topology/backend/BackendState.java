@@ -11,24 +11,17 @@ import com.purbon.kafka.topology.utils.JSON;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.Getter;
 
+@Getter
 public class BackendState {
 
-  private final Set<TopologyAclBinding> bindings;
-  private final Set<ServiceAccount> accounts;
-  private final Set<String> topics;
-  private final Set<KafkaConnectArtefact> connectors;
-  private final Set<KsqlStreamArtefact> ksqlStreams;
-  private final Set<KsqlTableArtefact> ksqlTables;
-
-  public BackendState() {
-    this.accounts = new HashSet<>();
-    this.bindings = new HashSet<>();
-    this.topics = new HashSet<>();
-    this.connectors = new HashSet<>();
-    this.ksqlStreams = new HashSet<>();
-    this.ksqlTables = new HashSet<>();
-  }
+  private final Set<TopologyAclBinding> bindings = new HashSet<>();
+  private final Set<ServiceAccount> accounts = new HashSet<>();
+  private final Set<String> topics = new HashSet<>();
+  private final Set<KafkaConnectArtefact> connectors = new HashSet<>();
+  private final Set<KsqlStreamArtefact> ksqlStreams = new HashSet<>();
+  private final Set<KsqlTableArtefact> ksqlTables = new HashSet<>();
 
   public void addAccounts(Collection<ServiceAccount> accounts) {
     this.accounts.addAll(accounts);
@@ -52,30 +45,6 @@ public class BackendState {
 
   public void addKSqlTables(Collection<KsqlTableArtefact> ksqlTables) {
     this.ksqlTables.addAll(ksqlTables);
-  }
-
-  public Set<TopologyAclBinding> getBindings() {
-    return bindings;
-  }
-
-  public Set<ServiceAccount> getAccounts() {
-    return accounts;
-  }
-
-  public Set<String> getTopics() {
-    return topics;
-  }
-
-  public Set<KafkaConnectArtefact> getConnectors() {
-    return connectors;
-  }
-
-  public Set<KsqlStreamArtefact> getKSqlStreams() {
-    return ksqlStreams;
-  }
-
-  public Set<KsqlTableArtefact> getKSqlTables() {
-    return ksqlTables;
   }
 
   @JsonIgnore

@@ -16,19 +16,18 @@ import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Slf4j
 public class AccessControlManager implements ExecutionPlanUpdater {
-
-  private static final Logger LOGGER = LogManager.getLogger(AccessControlManager.class);
 
   private final Configuration config;
   private final JulieRoles julieRoles;
-  private AccessControlProvider controlProvider;
-  private BindingsBuilderProvider bindingsBuilder;
+  private final AccessControlProvider controlProvider;
+  private final BindingsBuilderProvider bindingsBuilder;
   private final ResourceFilter resourceFilter;
 
   public AccessControlManager(
@@ -81,7 +80,7 @@ public class AccessControlManager implements ExecutionPlanUpdater {
             .collect(Collectors.toSet());
 
     if (!config.shouldVerifyRemoteState()) {
-      LOGGER.warn(
+      log.warn(
           "Remote state verification disabled, this is not a good practice, be aware"
               + "in future versions, this check is going to become mandatory.");
     }
@@ -109,7 +108,7 @@ public class AccessControlManager implements ExecutionPlanUpdater {
           "Your remote state has changed since the last execution, this ACL(s): "
               + StringUtils.join(delta, ",")
               + " are in your local state, but not in the cluster, please investigate!";
-      LOGGER.error(errorMessage);
+      log.error(errorMessage);
       throw new RemoteValidationException(errorMessage);
     }
   }
@@ -120,9 +119,9 @@ public class AccessControlManager implements ExecutionPlanUpdater {
   }
 
   private Set<TopologyAclBinding> providerBindings() {
-    Set<TopologyAclBinding> bindings = new HashSet<>();
-    controlProvider.listAcls().values().forEach(bindings::addAll);
-    return bindings;
+    return controlProvider.listAcls().values().stream()
+        .flatMap(Collection::stream)
+        .collect(Collectors.toSet());
   }
 
   /**
@@ -163,7 +162,10 @@ public class AccessControlManager implements ExecutionPlanUpdater {
         aclBindingsResults.add(
             new SchemaAuthorizationAclBindingsBuilder(
                     new BuildBindingsForSchemaAuthorization(
-                        bindingsBuilder, schemaAuthorization, config, topicPrefix))
+                        bindingsBuilder,
+                        schemaAuthorization,
+                        config.shouldOptimizeAcls(),
+                        topicPrefix))
                 .getAclBindings());
       }
 
@@ -224,7 +226,7 @@ public class AccessControlManager implements ExecutionPlanUpdater {
 
     for (Topic topic : topics) {
       final String fullTopicName = topic.toString();
-      Set<Consumer> consumers = new HashSet(topic.getConsumers());
+      Set<Consumer> consumers = new HashSet<>(topic.getConsumers());
       if (includeProjectLevel) {
         consumers.addAll(project.getConsumers());
       }
@@ -235,7 +237,7 @@ public class AccessControlManager implements ExecutionPlanUpdater {
                 .getAclBindings();
         aclBindingsResults.add(aclBindingsResult);
       }
-      Set<Producer> producers = new HashSet(topic.getProducers());
+      Set<Producer> producers = new HashSet<>(topic.getProducers());
       if (includeProjectLevel) {
         producers.addAll(project.getProducers());
       }
@@ -269,15 +271,14 @@ public class AccessControlManager implements ExecutionPlanUpdater {
             .map(AclBindingsResult::getErrorMessage)
             .collect(Collectors.toList());
     if (!errorMessages.isEmpty()) {
-      for (String errorMessage : errorMessages) {
-        LOGGER.error(errorMessage);
-      }
+      errorMessages.forEach(log::error);
       throw new IOException(errorMessages.get(0));
     }
 
     Set<TopologyAclBinding> allFinalBindings =
         aclBindingsResults.stream()
-            .flatMap(aboe -> aboe.getAclBindings().stream())
+            .map(AclBindingsResult::getAclBindings)
+            .flatMap(Collection::stream)
             .collect(Collectors.toSet());
 
     Set<TopologyAclBinding> bindingsToBeCreated =
@@ -286,7 +287,7 @@ public class AccessControlManager implements ExecutionPlanUpdater {
             // Only create what we manage
             .filter(resourceFilter::matchesManagedPrefixList)
             // Diff of bindings, so we only create what is not already created in the cluster.
-            .filter(binding -> !bindings.contains(binding))
+            .filter(Predicate.not(bindings::contains))
             .collect(Collectors.toSet());
 
     if (!bindingsToBeCreated.isEmpty()) {
@@ -299,7 +300,7 @@ public class AccessControlManager implements ExecutionPlanUpdater {
       // but where previously created
       Set<TopologyAclBinding> bindingsToDelete =
           bindings.stream()
-              .filter(binding -> !allFinalBindings.contains(binding))
+              .filter(Predicate.not(allFinalBindings::contains))
               .collect(Collectors.toSet());
       if (!bindingsToDelete.isEmpty()) {
         ClearBindings clearBindings = new ClearBindings(controlProvider, bindingsToDelete);
@@ -315,10 +316,18 @@ public class AccessControlManager implements ExecutionPlanUpdater {
     Platform platform = topology.getPlatform();
 
     // Set cluster level ACLs
-    syncClusterLevelRbac(platform.getKafka().getRbac(), KAFKA, aclBindingsResults);
-    syncClusterLevelRbac(platform.getKafkaConnect().getRbac(), KAFKA_CONNECT, aclBindingsResults);
-    syncClusterLevelRbac(
-        platform.getSchemaRegistry().getRbac(), SCHEMA_REGISTRY, aclBindingsResults);
+    platform
+        .getKafka()
+        .getRbac()
+        .ifPresent(rbac -> syncClusterLevelRbac(rbac, KAFKA, aclBindingsResults));
+    platform
+        .getKafkaConnect()
+        .getRbac()
+        .ifPresent(rbac -> syncClusterLevelRbac(rbac, KAFKA_CONNECT, aclBindingsResults));
+    platform
+        .getSchemaRegistry()
+        .getRbac()
+        .ifPresent(rbac -> syncClusterLevelRbac(rbac, SCHEMA_REGISTRY, aclBindingsResults));
 
     // Set component level ACLs
     for (SchemaRegistryInstance schemaRegistry : platform.getSchemaRegistry().getInstances()) {
@@ -339,19 +348,14 @@ public class AccessControlManager implements ExecutionPlanUpdater {
   }
 
   private void syncClusterLevelRbac(
-      Optional<Map<String, List<User>>> rbac,
-      Component cmp,
-      List<AclBindingsResult> aclBindingsResults) {
-    if (rbac.isPresent()) {
-      Map<String, List<User>> roles = rbac.get();
-      for (String role : roles.keySet()) {
-        for (User user : roles.get(role)) {
-          aclBindingsResults.add(
-              new ClusterLevelAclBindingsBuilder(bindingsBuilder, role, user, cmp)
-                  .getAclBindings());
-        }
-      }
-    }
+      Map<String, List<User>> roles, Component cmp, List<AclBindingsResult> aclBindingsResults) {
+    roles.forEach(
+        (role, users) ->
+            users.forEach(
+                user ->
+                    aclBindingsResults.add(
+                        new ClusterLevelAclBindingsBuilder(bindingsBuilder, role, user, cmp)
+                            .getAclBindings())));
   }
 
   private void syncRbacRawRoles(

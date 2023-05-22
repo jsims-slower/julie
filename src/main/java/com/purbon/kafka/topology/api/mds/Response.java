@@ -6,12 +6,11 @@ import java.net.http.HttpHeaders;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Response {
 
-  private static final Logger LOGGER = LogManager.getLogger(Response.class);
   private static final String STATUS_FIELD = "status";
 
   private final String response;
@@ -43,7 +42,7 @@ public class Response {
       try {
         this.map = responseToJson(this.response);
       } catch (Exception ex) {
-        LOGGER.debug("response was not a map");
+        log.debug("response was not a map");
         this.map = new HashMap<>();
       }
     }
@@ -54,7 +53,7 @@ public class Response {
     try {
       return JSON.toMap(response);
     } catch (JsonProcessingException e) {
-      LOGGER.error("The incoming data is not a map", e);
+      log.error("The incoming data is not a map", e);
       return new HashMap<>();
     }
   }

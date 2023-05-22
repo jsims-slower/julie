@@ -1,15 +1,15 @@
 package com.purbon.kafka.topology.actions.access.builders.rbac;
 
 import com.purbon.kafka.topology.BindingsBuilderProvider;
-import com.purbon.kafka.topology.Configuration;
 import com.purbon.kafka.topology.actions.BaseAccessControlAction;
 import com.purbon.kafka.topology.model.users.Schemas;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class BuildBindingsForSchemaAuthorization extends BaseAccessControlAction {
 
   private final BindingsBuilderProvider builderProvider;
@@ -17,27 +17,17 @@ public class BuildBindingsForSchemaAuthorization extends BaseAccessControlAction
   private final Boolean shouldOptimizeAcls;
   private final String schemaPrefix;
 
-  public BuildBindingsForSchemaAuthorization(
-      BindingsBuilderProvider builderProvider,
-      Schemas schemaAuthorization,
-      Configuration configuration,
-      String schemaPrefix) {
-    this.builderProvider = builderProvider;
-    this.schemaAuthorization = schemaAuthorization;
-    this.shouldOptimizeAcls = configuration.shouldOptimizeAcls();
-    this.schemaPrefix = schemaPrefix;
-  }
-
   @Override
-  protected void execute() throws IOException {
-    aclBindings =
+  protected void execute() {
+    aclBindings.clear();
+    aclBindings.addAll(
         builderProvider.setSchemaAuthorization(
             schemaAuthorization.getPrincipal(),
             schemaAuthorization.getSubjects(),
             schemaAuthorization.getRole(),
             schemaAuthorization.isPrefixed(),
             shouldOptimizeAcls,
-            schemaPrefix);
+            schemaPrefix));
   }
 
   @Override

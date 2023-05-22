@@ -51,12 +51,12 @@ The messages will look like this:
     [{
 		"principal": "name",
 		"resource_name": "rn://create.account/com.purbon.kafka.topology.actions.accounts.CreateAccounts/name",
-		"operation": "com.purbon.kafka.topology.actions.BaseAccountsAction$1"
+		"operation": "com.purbon.kafka.topology.actions.accounts.CreateAccounts"
 	},
 	{
 		"principal": "another-name",
 		"resource_name": "rn://create.account/com.purbon.kafka.topology.actions.accounts.CreateAccounts/another-name",
-		"operation": "com.purbon.kafka.topology.actions.BaseAccountsAction$1"
+		"operation": "com.purbon.kafka.topology.actions.accounts.CreateAccounts"
 	}]
 
 each action will have more properties specific to it, ranging from the binding details, the principals, etc...

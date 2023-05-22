@@ -9,7 +9,7 @@ import java.util.Set;
 
 public class CCloudPrincipalProvider implements PrincipalProvider {
 
-  private CCloudApi cCloudApi;
+  private final CCloudApi cCloudApi;
   private String env;
 
   public CCloudPrincipalProvider(Configuration config) throws IOException {

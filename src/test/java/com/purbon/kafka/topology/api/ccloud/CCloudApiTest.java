@@ -16,7 +16,6 @@ import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,12 +44,12 @@ public class CCloudApiTest {
     props.put(CCLOUD_SA_ACCOUNT_QUERY_PAGE_SIZE, 1);
     Configuration config = new Configuration(cliOps, props);
 
-    apiClient = new CCloudApi(httpClient, Optional.of(httpClient), config);
+    apiClient = new CCloudApi(httpClient, httpClient, config);
   }
 
   @Test
   public void testAclCreateMethod() throws IOException {
-    when(httpClient.baseUrl()).thenReturn("http://not.valid:9999");
+    when(httpClient.getServer()).thenReturn("http://not.valid:9999");
 
     TopologyAclBinding binding =
         new TopologyAclBinding("TOPIC", "foo", "*", "ALL", "User:foo", "LITERAL");

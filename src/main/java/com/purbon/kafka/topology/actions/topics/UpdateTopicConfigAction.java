@@ -55,7 +55,7 @@ public class UpdateTopicConfigAction extends BaseAction {
   }
 
   @Override
-  protected List<Map<String, Object>> detailedProps() {
+  protected Collection<Map<String, Object>> detailedProps() {
     Map<String, Object> map = new HashMap<>();
     props().forEach((key, value) -> map.put(key.toLowerCase(Locale.ROOT), value));
     map.remove("action");

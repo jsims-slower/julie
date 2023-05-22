@@ -23,12 +23,10 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class KsqlApiClient implements ArtefactClient {
-
-  private static final Logger LOGGER = LogManager.getLogger(KsqlApiClient.class);
 
   private final URL server;
   private final Client client;
@@ -71,11 +69,11 @@ public class KsqlApiClient implements ArtefactClient {
   public Map<String, Object> add(String sql) throws IOException {
     try {
       if (isCreateWithoutReplace(sql)) {
-        LOGGER.warn(
+        log.warn(
             "Are you trying to archive idempotency? if yes, please make sure that your statement"
                 + "starts with CREATE OR REPLACE. Currently sour ksql statement does not, "
-                + "- "
-                + sql.substring(0, 40));
+                + "- {}",
+            sql.substring(0, 40));
       }
 
       var result = client.executeStatement(sql).get();
@@ -172,7 +170,7 @@ public class KsqlApiClient implements ArtefactClient {
         .map(
             json -> {
               try {
-                return (KsqlStreamArtefact) JSON.toObject(json, KsqlStreamArtefact.class);
+                return JSON.toObject(json, KsqlStreamArtefact.class);
               } catch (JsonProcessingException e) {
                 e.printStackTrace();
                 return null;
@@ -185,7 +183,7 @@ public class KsqlApiClient implements ArtefactClient {
         .map(
             json -> {
               try {
-                return (KsqlTableArtefact) JSON.toObject(json, KsqlTableArtefact.class);
+                return JSON.toObject(json, KsqlTableArtefact.class);
               } catch (JsonProcessingException e) {
                 e.printStackTrace();
                 return null;

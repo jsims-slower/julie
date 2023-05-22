@@ -4,16 +4,12 @@ import com.purbon.kafka.topology.AccessControlProvider;
 import com.purbon.kafka.topology.actions.BaseAccessControlAction;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.*;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class ClearBindings extends BaseAccessControlAction {
-
-  private static final Logger LOGGER = LogManager.getLogger(ClearBindings.class);
 
   private final AccessControlProvider controlProvider;
 
@@ -25,8 +21,8 @@ public class ClearBindings extends BaseAccessControlAction {
 
   @Override
   protected void execute() throws IOException {
-    LOGGER.debug("ClearBindings: " + aclBindings);
-    controlProvider.clearBindings(new HashSet(aclBindings));
+    log.debug("ClearBindings: {}", aclBindings);
+    controlProvider.clearBindings(new HashSet<>(aclBindings));
   }
 
   @Override

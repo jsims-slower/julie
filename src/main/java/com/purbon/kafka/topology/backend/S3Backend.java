@@ -7,8 +7,7 @@ import com.purbon.kafka.topology.utils.JSON;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -17,9 +16,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.*;
 
+@Slf4j
 public class S3Backend implements Backend {
-
-  private static final Logger LOGGER = LogManager.getLogger(S3Backend.class);
 
   private S3Client s3;
   private Configuration config;
@@ -53,9 +51,9 @@ public class S3Backend implements Backend {
   public BackendState load() {
     try {
       String content = getRemoteStateContent(STATE_FILE_NAME);
-      return (BackendState) JSON.toObject(content, BackendState.class);
+      return JSON.toObject(content, BackendState.class);
     } catch (IOException ex) {
-      LOGGER.debug(ex);
+      log.debug(ex.getMessage(), ex);
       return new BackendState();
     }
   }
@@ -73,7 +71,7 @@ public class S3Backend implements Backend {
       ResponseBytes<GetObjectResponse> objectBytes = s3.getObjectAsBytes(request);
       return objectBytes.asString(StandardCharsets.UTF_8);
     } catch (S3Exception ex) {
-      LOGGER.debug(ex);
+      log.debug(ex.getMessage(), ex);
       throw new IOException(ex);
     }
   }
@@ -86,7 +84,7 @@ public class S3Backend implements Backend {
           s3.putObject(request, RequestBody.fromString(content, StandardCharsets.UTF_8));
       return response.eTag();
     } catch (S3Exception ex) {
-      LOGGER.error(ex);
+      log.error(ex.getMessage(), ex);
       throw new IOException(ex);
     }
   }

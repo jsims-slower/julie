@@ -2,27 +2,20 @@ package com.purbon.kafka.topology.actions;
 
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
+import java.util.*;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@RequiredArgsConstructor
 public abstract class BaseAccessControlAction extends BaseAction {
 
-  protected Collection<TopologyAclBinding> aclBindings;
-
-  public BaseAccessControlAction(Collection<TopologyAclBinding> aclBindings) {
-    this.aclBindings = aclBindings;
-  }
+  @Getter protected final Collection<TopologyAclBinding> aclBindings;
 
   protected BaseAccessControlAction() {
-    this.aclBindings = new ArrayList<>();
+    this(new ArrayList<>());
   }
 
   @Override
@@ -43,27 +36,20 @@ public abstract class BaseAccessControlAction extends BaseAction {
 
   protected abstract void execute() throws IOException;
 
-  public List<TopologyAclBinding> getAclBindings() {
-    return new ArrayList<>(aclBindings);
-  }
-
   @Override
-  protected List<Map<String, Object>> detailedProps() {
+  protected Collection<Map<String, Object>> detailedProps() {
     return aclBindings.stream()
         .map(
-            new Function<TopologyAclBinding, Map<String, Object>>() {
-              @Override
-              public Map<String, Object> apply(TopologyAclBinding binding) {
-                Map<String, Object> map = new HashMap<>();
-                map.put("resource_name", resourceNameBuilder(binding));
-                map.put("operation", getClass().getName());
-                map.put("acl.resource_type", binding.getResourceType());
-                map.put("acl.resource_name", binding.getResourceName());
-                map.put("acl.principal", binding.getPrincipal());
-                map.put("acl.operation", binding.getOperation());
-                map.put("acl.pattern", binding.getPattern());
-                return map;
-              }
+            binding -> {
+              Map<String, Object> map = new HashMap<>();
+              map.put("resource_name", resourceNameBuilder(binding));
+              map.put("operation", getClass().getName());
+              map.put("acl.resource_type", binding.getResourceType());
+              map.put("acl.resource_name", binding.getResourceName());
+              map.put("acl.principal", binding.getPrincipal());
+              map.put("acl.operation", binding.getOperation());
+              map.put("acl.pattern", binding.getPattern());
+              return map;
             })
         .collect(Collectors.toList());
   }

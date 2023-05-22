@@ -8,12 +8,10 @@ import com.purbon.kafka.topology.utils.JSON;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class GCPBackend implements Backend {
-
-  private static final Logger LOGGER = LogManager.getLogger(GCPBackend.class);
 
   private Storage storage;
   private Configuration config;
@@ -39,7 +37,7 @@ public class GCPBackend implements Backend {
           state.asJson().getBytes(StandardCharsets.UTF_8),
           Storage.BlobTargetOption.detectContentType());
     } catch (Exception ex) {
-      LOGGER.error(ex);
+      log.error(ex.getMessage(), ex);
       throw new IOException(ex);
     }
   }
@@ -49,9 +47,9 @@ public class GCPBackend implements Backend {
     try {
       Blob blob = storage.get(BlobId.of(config.getGCPBucket(), STATE_FILE_NAME));
       String contentJson = new String(blob.getContent(), StandardCharsets.UTF_8);
-      return (BackendState) JSON.toObject(contentJson, BackendState.class);
+      return JSON.toObject(contentJson, BackendState.class);
     } catch (Exception ex) {
-      LOGGER.error(ex);
+      log.error(ex.getMessage(), ex);
       throw new IOException(ex);
     }
   }

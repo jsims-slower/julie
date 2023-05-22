@@ -22,38 +22,36 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class CCloudApi {
-
-  private static final Logger LOGGER = LogManager.getLogger(CCloudApi.class);
 
   static final String V1_IAM_SERVICE_ACCOUNTS_URL = "/service_accounts";
   static final String V2_IAM_SERVICE_ACCOUNTS_URL = "/iam/v2/service-accounts";
   static final String V3_KAFKA_CLUSTER_URL = "/kafka/v3/clusters/";
 
-  private JulieHttpClient clusterHttpClient;
-  private JulieHttpClient ccloudApiHttpClient;
+  private final JulieHttpClient clusterHttpClient;
+  private final JulieHttpClient ccloudApiHttpClient;
 
-  private String ccloudApiBaseUrl = "https://api.confluent.cloud";
+  private static final String ccloudApiBaseUrl = "https://api.confluent.cloud";
   private static final String V3_KAFKA_CLUSTER_ACL_PATTERN = V3_KAFKA_CLUSTER_URL + "%s/acls";
 
-  private int serviceAccountPageSize;
+  private final int serviceAccountPageSize;
 
   public CCloudApi(String baseServerUrl, Configuration config) throws IOException {
-    this(new JulieHttpClient(baseServerUrl, Optional.of(config)), Optional.empty(), config);
+    this(
+        new JulieHttpClient(baseServerUrl, Optional.of(config)),
+        new JulieHttpClient(ccloudApiBaseUrl, Optional.of(config)),
+        config);
   }
 
   public CCloudApi(
       JulieHttpClient clusterHttpClient,
-      Optional<JulieHttpClient> ccloudApiHttpClientOptional,
-      Configuration config)
-      throws IOException {
+      JulieHttpClient ccloudApiHttpClient,
+      Configuration config) {
     this.clusterHttpClient = clusterHttpClient;
-    this.ccloudApiHttpClient =
-        ccloudApiHttpClientOptional.orElse(
-            new JulieHttpClient(ccloudApiBaseUrl, Optional.of(config)));
+    this.ccloudApiHttpClient = ccloudApiHttpClient;
     this.clusterHttpClient.setBasicAuth(config.getConfluentCloudClusterAuth());
     this.ccloudApiHttpClient.setBasicAuth(config.getConfluentCloudCloudApiAuth());
 
@@ -63,7 +61,7 @@ public class CCloudApi {
   public void createAcl(String clusterId, TopologyAclBinding binding) throws IOException {
     String url = String.format(V3_KAFKA_CLUSTER_ACL_PATTERN, clusterId);
     var request =
-        new KafkaAclRequest(binding, String.format("%s%s", clusterHttpClient.baseUrl(), url));
+        new KafkaAclRequest(binding, String.format("%s%s", clusterHttpClient.getServer(), url));
     clusterHttpClient.doPost(url, JSON.asString(request));
   }
 
@@ -79,8 +77,7 @@ public class CCloudApi {
     do {
       Response rawResponse = clusterHttpClient.doGet(url);
       KafkaAclListResponse response =
-          (KafkaAclListResponse)
-              JSON.toObject(rawResponse.getResponseAsString(), KafkaAclListResponse.class);
+          JSON.toObject(rawResponse.getResponseAsString(), KafkaAclListResponse.class);
       acls.addAll(
           response.getData().stream().map(TopologyAclBinding::new).collect(Collectors.toList()));
       url = response.getMetadata().getNext();
@@ -100,11 +97,10 @@ public class CCloudApi {
   public ServiceAccount createServiceAccount(String sa, String description) throws IOException {
     var request = new ServiceAccountRequest(sa, description);
     var requestJson = JSON.asString(request);
-    LOGGER.debug("createServiceAccount request=" + requestJson);
+    log.debug("createServiceAccount request={}", requestJson);
     String responseBody = ccloudApiHttpClient.doPost(V2_IAM_SERVICE_ACCOUNTS_URL, requestJson);
 
-    ServiceAccountResponse response =
-        (ServiceAccountResponse) JSON.toObject(responseBody, ServiceAccountResponse.class);
+    ServiceAccountResponse response = JSON.toObject(responseBody, ServiceAccountResponse.class);
     return new ServiceAccount(
         response.getId(),
         response.getDisplay_name(),
@@ -151,8 +147,7 @@ public class CCloudApi {
 
   private ServiceAccountV1Response getServiceAccountsV1(String url) throws IOException {
     Response r = ccloudApiHttpClient.doGet(url);
-    return (ServiceAccountV1Response)
-        JSON.toObject(r.getResponseAsString(), ServiceAccountV1Response.class);
+    return JSON.toObject(r.getResponseAsString(), ServiceAccountV1Response.class);
   }
 
   private ListServiceAccountResponse getListServiceAccounts(String url, int page_size)
@@ -162,7 +157,6 @@ public class CCloudApi {
       requestUrl = String.format("%s?page_size=%d", url, page_size);
     }
     Response r = ccloudApiHttpClient.doGet(requestUrl);
-    return (ListServiceAccountResponse)
-        JSON.toObject(r.getResponseAsString(), ListServiceAccountResponse.class);
+    return JSON.toObject(r.getResponseAsString(), ListServiceAccountResponse.class);
   }
 }

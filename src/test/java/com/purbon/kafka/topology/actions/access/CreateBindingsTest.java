@@ -42,7 +42,7 @@ public class CreateBindingsTest {
                 + "  \"acl.operation\" : \"operation\",\n"
                 + "  \"acl.resource_name\" : \"resourceName\",\n"
                 + "  \"resource_name\" : \"rn://create.binding/com.purbon.kafka.topology.actions.access.CreateBindings/CLUSTER/resourceName/service/operation/pattern\",\n"
-                + "  \"operation\" : \"com.purbon.kafka.topology.actions.BaseAccessControlAction$1\",\n"
+                + "  \"operation\" : \"com.purbon.kafka.topology.actions.access.CreateBindings\",\n"
                 + "  \"acl.principal\" : \"service\"\n"
                 + "}");
     assertThat(refs)
@@ -53,7 +53,7 @@ public class CreateBindingsTest {
                 + "  \"acl.operation\" : \"op\",\n"
                 + "  \"acl.resource_name\" : \"Topic\",\n"
                 + "  \"resource_name\" : \"rn://create.binding/com.purbon.kafka.topology.actions.access.CreateBindings/CLUSTER/Topic/principal/op/LITERAL\",\n"
-                + "  \"operation\" : \"com.purbon.kafka.topology.actions.BaseAccessControlAction$1\",\n"
+                + "  \"operation\" : \"com.purbon.kafka.topology.actions.access.CreateBindings\",\n"
                 + "  \"acl.principal\" : \"principal\"\n"
                 + "}");
   }

@@ -9,28 +9,20 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@RequiredArgsConstructor
 public class CreateArtefactAction extends BaseAction {
 
   private final ArtefactClient client;
-  private final Artefact artefact;
   private final String rootPath;
   private final Collection<? extends Artefact> artefacts;
-
-  public CreateArtefactAction(
-      ArtefactClient client,
-      String rootPath,
-      Collection<? extends Artefact> artefacts,
-      Artefact artefact) {
-    this.client = client;
-    this.artefact = artefact;
-    this.artefacts = artefacts;
-    this.rootPath = rootPath;
-  }
+  @Getter private final Artefact artefact;
 
   @Override
   public void run() throws IOException {
@@ -38,10 +30,6 @@ public class CreateArtefactAction extends BaseAction {
       log.info("Creating artefact {} for client {}", artefact.getName(), client.getClass());
       client.add(artefact.getName(), content());
     }
-  }
-
-  public Artefact getArtefact() {
-    return artefact;
   }
 
   private String content() throws IOException {
@@ -58,7 +46,7 @@ public class CreateArtefactAction extends BaseAction {
   }
 
   @Override
-  protected List<Map<String, Object>> detailedProps() {
+  protected Collection<Map<String, Object>> detailedProps() {
     Map<String, Object> map = new HashMap<>();
     map.put(
         "resource_name",

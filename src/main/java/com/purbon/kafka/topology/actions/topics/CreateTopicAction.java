@@ -4,11 +4,8 @@ import com.purbon.kafka.topology.actions.BaseAction;
 import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
 import com.purbon.kafka.topology.model.Topic;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +39,7 @@ public class CreateTopicAction extends BaseAction {
   }
 
   @Override
-  protected List<Map<String, Object>> detailedProps() {
+  protected Collection<Map<String, Object>> detailedProps() {
     Map<String, Object> map = new HashMap<>();
     map.put(
         "resource_name",

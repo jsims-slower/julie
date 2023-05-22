@@ -2,10 +2,8 @@ package com.purbon.kafka.topology.actions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.purbon.kafka.topology.utils.JSON;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -14,10 +12,10 @@ public abstract class BaseAction implements Action {
 
   protected abstract Map<String, Object> props();
 
-  protected abstract List<Map<String, Object>> detailedProps();
+  protected abstract Collection<Map<String, Object>> detailedProps();
 
   @Override
-  public List<String> refs() {
+  public Collection<String> refs() {
     return detailedProps().stream()
         .map(
             map -> {

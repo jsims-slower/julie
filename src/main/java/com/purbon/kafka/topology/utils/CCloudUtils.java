@@ -8,29 +8,27 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequiredArgsConstructor
 public class CCloudUtils {
 
-  private static final Logger LOGGER = LogManager.getLogger(CCloudUtils.class);
   private static final long SERVICE_ACCOUNT_NOT_FOUND = -1L;
 
-  private Configuration config;
-
-  public CCloudUtils(Configuration config) {
-    this.config = config;
-  }
+  private final Configuration config;
 
   public TopologyAclBinding translateIfNecessary(
       TopologyAclBinding binding, Map<String, Long> serviceAccountIdByNameMap) throws IOException {
 
     if (!config.isConfluentCloudServiceAccountTranslationEnabled()) {
-      LOGGER.debug("Confluent Cloud Principal translation is currently disabled");
+      log.debug("Confluent Cloud Principal translation is currently disabled");
       return binding;
     }
 
-    LOGGER.info(
+    log.info(
         "At the time of this PR, 4 Feb the Confluent Cloud ACL(s) api require to translate "
             + "Service Account names into ID(s). At some point in time this will not be required anymore, "
             + "so you can configure this out by using ccloud.service_account.translation.enabled=false (true by default)");
@@ -47,22 +45,18 @@ public class CCloudUtils {
               + " failed, please review your system configuration");
     }
 
-    LOGGER.debug(
-        "Translating Confluent Cloud principal "
-            + binding.getPrincipal()
-            + " to "
-            + principal.getPrincipalType().name()
-            + ":"
-            + numericServiceAccountId);
-    TopologyAclBinding translatedBinding =
-        TopologyAclBinding.build(
-            binding.getResourceType(),
-            binding.getResourceName(),
-            binding.getHost(),
-            binding.getOperation(),
-            principal.toMappedPrincipalString(numericServiceAccountId),
-            binding.getPattern());
-    return translatedBinding;
+    log.debug(
+        "Translating Confluent Cloud principal {} to {}:{}",
+        binding.getPrincipal(),
+        principal.getPrincipalType(),
+        numericServiceAccountId);
+    return TopologyAclBinding.build(
+        binding.getResourceType(),
+        binding.getResourceName(),
+        binding.getHost(),
+        binding.getOperation(),
+        principal.toMappedPrincipalString(numericServiceAccountId),
+        binding.getPattern());
   }
 
   public Map<String, Long> initializeLookupTable(CCloudApi cli) throws IOException {

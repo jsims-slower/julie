@@ -8,20 +8,14 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class FileBackend implements Backend {
-
-  private static final Logger LOGGER = LogManager.getLogger(FileBackend.class);
 
   // Use FileWriter instead of RandomAccessFile due to
   // https://bugs.java.com/bugdatabase/view_bug.do?bug_id=4715154
-  private FileWriter writer;
-
-  public FileBackend() {
-    this.writer = null;
-  }
+  private FileWriter writer = null;
 
   @Override
   public void createOrOpen() {
@@ -34,7 +28,7 @@ public class FileBackend implements Backend {
       if (this.writer != null) writer.close();
       this.writer = new FileWriter(STATE_FILE_NAME, !Mode.TRUNCATE.equals(mode));
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error(e.getMessage(), e);
     }
   }
 
@@ -64,7 +58,7 @@ public class FileBackend implements Backend {
     try {
       writer.write(text);
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error(e.getMessage(), e);
       throw e;
     }
   }
@@ -74,7 +68,7 @@ public class FileBackend implements Backend {
     try {
       writer.close();
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error(e.getMessage(), e);
     }
   }
 }

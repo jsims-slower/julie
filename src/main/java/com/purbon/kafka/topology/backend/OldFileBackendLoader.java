@@ -9,12 +9,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 class OldFileBackendLoader {
 
-  private static final Logger LOGGER = LogManager.getLogger(OldFileBackendLoader.class);
   static final String SERVICE_ACCOUNTS_TAG = "ServiceAccounts";
   static final String TOPICS_TAG = "Topics";
   static final String ACLS_TAG = "acls";
@@ -48,9 +47,9 @@ class OldFileBackendLoader {
 
   private ServiceAccount parseServiceAccount(final String line) {
     try {
-      return (ServiceAccount) JSON.toObject(line, ServiceAccount.class);
+      return JSON.toObject(line, ServiceAccount.class);
     } catch (JsonProcessingException e) {
-      LOGGER.error(e);
+      log.error(e.getMessage(), e);
       return null;
     }
   }

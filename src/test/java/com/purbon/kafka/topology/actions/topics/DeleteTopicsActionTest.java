@@ -29,12 +29,14 @@ public class DeleteTopicsActionTest {
 
     var action = new DeleteTopics(adminClient, Collections.singletonList(topic.toString()));
 
-    var refs = action.refs();
-    assertThat(refs).hasSize(1);
-    var ref = refs.get(0);
-    assertThat(ref)
-        .contains(
-            "\"resource_name\" : \"rn://delete.topic/com.purbon.kafka.topology.actions.topics.DeleteTopics$1/ctx.project.foo\"");
-    assertThat(ref).contains("\"topic\" : \"ctx.project.foo\",");
+    assertThat(action.refs())
+        .hasSize(1)
+        .allSatisfy(
+            ref -> {
+              assertThat(ref)
+                  .contains(
+                      "\"resource_name\" : \"rn://delete.topic/com.purbon.kafka.topology.actions.topics.DeleteTopics/ctx.project.foo\"");
+              assertThat(ref).contains("\"topic\" : \"ctx.project.foo\",");
+            });
   }
 }

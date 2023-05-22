@@ -100,7 +100,7 @@ public class MDSApiClient extends JulieHttpClient {
               response.getField("token_type").toString(),
               Integer.valueOf(response.getField("expires_in").toString()));
     } catch (Exception e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -160,7 +160,7 @@ public class MDSApiClient extends JulieHttpClient {
       log.debug("bind.entity: {}", mdsRequest.getJsonEntity());
       doPost("/security/1.0/principals/" + mdsRequest.getUrl(), mdsRequest.getJsonEntity());
     } catch (IOException e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
       throw e;
     }
   }
@@ -243,7 +243,7 @@ public class MDSApiClient extends JulieHttpClient {
         users = JSON.toArray(response);
       }
     } catch (IOException ex) {
-      log.error("{}", ex.getMessage(), ex);
+      log.error(ex.getMessage(), ex);
     }
     return users;
   }
@@ -261,7 +261,7 @@ public class MDSApiClient extends JulieHttpClient {
         roles = JSON.toArray(response);
       }
     } catch (IOException e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
     }
 
     return roles;
@@ -289,10 +289,10 @@ public class MDSApiClient extends JulieHttpClient {
       String url = "/security/1.0/principals/" + principal + "/roles/" + role + "/resources";
       String response = doPost(url, JSON.asString(clusters));
       if (!response.isEmpty()) {
-        resources = (List<RbacResourceType>) JSON.toObjectList(response, RbacResourceType.class);
+        resources = JSON.toObjectList(response, RbacResourceType.class);
       }
     } catch (IOException e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
     }
 
     return resources;
@@ -303,10 +303,10 @@ public class MDSApiClient extends JulieHttpClient {
     try {
       String url = "/security/1.0/roleNames";
       Response response = doGet(url);
-      String[] myRoles = (String[]) JSON.toObject(response.getResponseAsString(), String[].class);
+      String[] myRoles = JSON.toObject(response.getResponseAsString(), String[].class);
       roles = Arrays.asList(myRoles);
     } catch (IOException e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
     }
     return roles;
   }

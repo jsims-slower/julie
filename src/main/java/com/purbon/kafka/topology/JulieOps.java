@@ -19,53 +19,30 @@ import io.confluent.kafka.schemaregistry.json.JsonSchemaProvider;
 import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchemaProvider;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import lombok.Getter;
-import lombok.Setter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Getter
 @Setter
+@AllArgsConstructor
 public class JulieOps implements AutoCloseable {
 
-  private static final Logger LOGGER = LogManager.getLogger(JulieOps.class);
-
-  private TopicManager topicManager;
-  private final PrincipalUpdateManager principalUpdateManager;
-  private final PrincipalDeleteManager principalDeleteManager;
-  private AccessControlManager accessControlManager;
-  private KafkaConnectArtefactManager connectorManager;
-  private KSqlArtefactManager kSqlArtefactManager;
   private final Map<String, Topology> topologies;
   private final Configuration config;
-  private final PrintStream outputStream;
-
-  private JulieOps(
-      Map<String, Topology> topologies,
-      Configuration config,
-      TopicManager topicManager,
-      AccessControlManager accessControlManager,
-      PrincipalUpdateManager principalUpdateManager,
-      PrincipalDeleteManager principalDeleteManager,
-      KafkaConnectArtefactManager connectorManager,
-      KSqlArtefactManager kSqlArtefactManager) {
-    this.topologies = topologies;
-    this.config = config;
-    this.topicManager = topicManager;
-    this.accessControlManager = accessControlManager;
-    this.principalUpdateManager = principalUpdateManager;
-    this.principalDeleteManager = principalDeleteManager;
-    this.connectorManager = connectorManager;
-    this.kSqlArtefactManager = kSqlArtefactManager;
-    this.outputStream = System.out;
-  }
+  private TopicManager topicManager;
+  private AccessControlManager accessControlManager;
+  private final PrincipalUpdateManager principalUpdateManager;
+  private final PrincipalDeleteManager principalDeleteManager;
+  private KafkaConnectArtefactManager connectorManager;
+  private KSqlArtefactManager kSqlArtefactManager;
 
   public static JulieOps build(String topologyFile, Map<String, String> config) throws Exception {
     return build(topologyFile, "default", config);
@@ -186,10 +163,9 @@ public class JulieOps implements AutoCloseable {
         kSqlArtefactManager);
   }
 
-  void run(BackendController backendController, PrintStream printStream, Auditor auditor)
-      throws IOException {
-    ExecutionPlan plan = ExecutionPlan.init(backendController, printStream, auditor);
-    LOGGER.debug(
+  void run(BackendController backendController, Auditor auditor) throws IOException {
+    ExecutionPlan plan = ExecutionPlan.init(backendController, System.out, auditor);
+    log.debug(
         "Running topology builder with topicManager=[{}], accessControlManager=[{}], dryRun=[{}], isQuiet=[{}]",
         topicManager,
         accessControlManager,
@@ -226,7 +202,7 @@ public class JulieOps implements AutoCloseable {
     if (config.doValidate()) {
       return;
     }
-    run(buildBackendController(config), outputStream, configureAndBuildAuditor(config));
+    run(buildBackendController(config), configureAndBuildAuditor(config));
   }
 
   public void close() {

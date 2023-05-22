@@ -77,7 +77,7 @@ public class RegisterSchemaAction extends BaseAction {
   }
 
   @Override
-  protected List<Map<String, Object>> detailedProps() {
+  protected Collection<Map<String, Object>> detailedProps() {
     return topic.getSchemas().stream()
         .map(
             topicSchemas -> {

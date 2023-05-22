@@ -10,18 +10,16 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 
+@Slf4j
 public class JulieOpsAuxiliary {
-
-  private static final Logger LOGGER = LogManager.getLogger(JulieOpsAuxiliary.class);
 
   public static BackendController buildBackendController(Configuration config) throws IOException {
     String backendClass = config.getStateProcessorImplementationClassName();
-    var backend = (Backend) initializeClassFromString(backendClass, config);
+    Backend backend = initializeClassFromString(backendClass, config);
     backend.configure(config);
     return new BackendController(backend);
   }
@@ -31,21 +29,22 @@ public class JulieOpsAuxiliary {
       return new VoidAuditor();
     }
     String appenderClassString = config.getJulieAuditAppenderClass();
-    var appender = (Appender) initializeClassFromString(appenderClassString, config);
+    Appender appender = initializeClassFromString(appenderClassString, config);
     return new Auditor(appender);
   }
 
-  private static Object initializeClassFromString(String classNameString, Configuration config)
+  private static <T> T initializeClassFromString(String classNameString, Configuration config)
       throws IOException {
     try {
-      Class aClass = Class.forName(classNameString);
-      Object newObject;
+      @SuppressWarnings("unchecked")
+      Class<T> aClass = (Class<T>) Class.forName(classNameString);
+      T newObject;
       try {
-        Constructor constructor = aClass.getConstructor(Configuration.class);
+        Constructor<T> constructor = aClass.getConstructor(Configuration.class);
         newObject = constructor.newInstance(config);
       } catch (NoSuchMethodException e) {
-        LOGGER.trace(classNameString + " has no config constructor, falling back to a default one");
-        Constructor constructor = aClass.getConstructor();
+        log.trace("{} has no config constructor, falling back to a default one", classNameString);
+        Constructor<T> constructor = aClass.getConstructor();
         newObject = constructor.newInstance();
       }
       return newObject;
@@ -71,7 +70,7 @@ public class JulieOpsAuxiliary {
     }
 
     if (clients.isEmpty()) {
-      LOGGER.debug(
+      log.debug(
           "No KafkaConnect clients configured for JulieOps to use, please verify your config file");
     }
 
@@ -88,8 +87,7 @@ public class JulieOpsAuxiliary {
     }
 
     if (clients.isEmpty()) {
-      LOGGER.debug(
-          "No KSQL clients configured for JulieOps to use, please verify your config file");
+      log.debug("No KSQL clients configured for JulieOps to use, please verify your config file");
     }
 
     return new KSqlArtefactManager(clients, config, topologyFileOrDir);

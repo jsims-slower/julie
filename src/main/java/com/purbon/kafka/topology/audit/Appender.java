@@ -1,6 +1,6 @@
 package com.purbon.kafka.topology.audit;
 
-public interface Appender {
+public interface Appender extends AutoCloseable {
 
   default void init() {
     // no-op

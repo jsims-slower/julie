@@ -4,16 +4,11 @@ import com.purbon.kafka.topology.AccessControlProvider;
 import com.purbon.kafka.topology.actions.BaseAccessControlAction;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class CreateBindings extends BaseAccessControlAction {
-
-  private static final Logger LOGGER = LogManager.getLogger(CreateBindings.class);
 
   private final AccessControlProvider controlProvider;
 
@@ -24,7 +19,7 @@ public class CreateBindings extends BaseAccessControlAction {
 
   @Override
   protected void execute() throws IOException {
-    LOGGER.debug("CreateBindings: " + aclBindings);
+    log.debug("CreateBindings: {}", aclBindings);
     controlProvider.createBindings(new HashSet<>(aclBindings));
   }
 

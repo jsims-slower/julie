@@ -83,11 +83,11 @@ public class BackendController {
   }
 
   public Set<KsqlStreamArtefact> getKSqlStreams() {
-    return state.getKSqlStreams();
+    return state.getKsqlStreams();
   }
 
   public Set<KsqlTableArtefact> getKSqlTables() {
-    return state.getKSqlTables();
+    return state.getKsqlTables();
   }
 
   public void flushAndClose() throws IOException {

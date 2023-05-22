@@ -1,7 +1,6 @@
 package com.purbon.kafka.topology.audit;
 
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.purbon.kafka.topology.PrincipalProvider;
 import com.purbon.kafka.topology.actions.accounts.CreateAccounts;
@@ -27,14 +26,16 @@ public class AuditorTest {
 
     var action = new CreateAccounts(provider, accounts);
 
-    var auditor = new Auditor(appender);
-    auditor.log(action);
+    try (var auditor = new Auditor(appender)) {
+      auditor.log(action);
+    }
+
     verify(appender, times(1))
         .log(
             "{\n"
                 + "  \"principal\" : \"name\",\n"
                 + "  \"resource_name\" : \"rn://create.account/com.purbon.kafka.topology.actions.accounts.CreateAccounts/name\",\n"
-                + "  \"operation\" : \"com.purbon.kafka.topology.actions.BaseAccountsAction$1\"\n"
+                + "  \"operation\" : \"com.purbon.kafka.topology.actions.accounts.CreateAccounts\"\n"
                 + "}");
 
     verify(appender, times(1))
@@ -42,7 +43,9 @@ public class AuditorTest {
             "{\n"
                 + "  \"principal\" : \"eman\",\n"
                 + "  \"resource_name\" : \"rn://create.account/com.purbon.kafka.topology.actions.accounts.CreateAccounts/eman\",\n"
-                + "  \"operation\" : \"com.purbon.kafka.topology.actions.BaseAccountsAction$1\"\n"
+                + "  \"operation\" : \"com.purbon.kafka.topology.actions.accounts.CreateAccounts\"\n"
                 + "}");
+
+    verify(appender).close();
   }
 }

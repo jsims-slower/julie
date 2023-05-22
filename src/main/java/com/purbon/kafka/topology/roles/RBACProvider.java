@@ -5,18 +5,13 @@ import com.purbon.kafka.topology.api.mds.MDSApiClient;
 import com.purbon.kafka.topology.api.mds.RbacResourceType;
 import com.purbon.kafka.topology.api.mds.RequestScope;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Slf4j
 public class RBACProvider implements AccessControlProvider {
 
-  private static final Logger LOGGER = LogManager.getLogger(RBACProvider.class);
   private final MDSApiClient apiClient;
 
   public RBACProvider(MDSApiClient apiClient) {
@@ -24,16 +19,16 @@ public class RBACProvider implements AccessControlProvider {
   }
 
   @Override
-  public void createBindings(Set<TopologyAclBinding> bindings) throws IOException {
-    LOGGER.debug("RBACProvider: createBindings");
+  public void createBindings(Collection<TopologyAclBinding> bindings) throws IOException {
+    log.debug("RBACProvider: createBindings");
     for (TopologyAclBinding binding : bindings) {
       apiClient.bindRequest(binding);
     }
   }
 
   @Override
-  public void clearBindings(Set<TopologyAclBinding> bindings) {
-    LOGGER.debug("RBACProvider: clearAcls");
+  public void clearBindings(Collection<TopologyAclBinding> bindings) {
+    log.debug("RBACProvider: clearAcls");
     bindings.forEach(
         aclBinding -> {
           String principal = aclBinding.getPrincipal();

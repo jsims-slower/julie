@@ -7,29 +7,23 @@ import com.purbon.kafka.topology.model.Artefact;
 import com.purbon.kafka.topology.utils.Utils;
 import java.io.IOException;
 import java.util.*;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@RequiredArgsConstructor
 public class SyncArtefactAction extends BaseAction {
 
   private final ArtefactClient client;
-  private final Artefact artefact;
   private final String rootPath;
-
-  public SyncArtefactAction(ArtefactClient client, String rootPath, Artefact artefact) {
-    this.client = client;
-    this.artefact = artefact;
-    this.rootPath = rootPath;
-  }
+  @Getter private final Artefact artefact;
 
   @Override
   public void run() throws IOException {
     log.info("Updating artefact {} for client {}", artefact.getName(), client.getClass());
     client.update(artefact.getName(), content());
-  }
-
-  public Artefact getArtefact() {
-    return artefact;
   }
 
   private String content() throws IOException {
@@ -46,7 +40,7 @@ public class SyncArtefactAction extends BaseAction {
   }
 
   @Override
-  protected List<Map<String, Object>> detailedProps() {
+  protected Collection<Map<String, Object>> detailedProps() {
     Map<String, Object> map = new HashMap<>();
     map.put(
         "resource_name",

@@ -31,7 +31,7 @@ public class TopologyBuilderAdminClient {
     try {
       listOfTopics = adminClient.listTopics(options).names().get();
     } catch (InterruptedException | ExecutionException e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
       throw new IOException(e);
     }
     return listOfTopics;
@@ -86,7 +86,7 @@ public class TopologyBuilderAdminClient {
     try {
       adminClient.incrementalAlterConfigs(configs).all().get();
     } catch (InterruptedException | ExecutionException ex) {
-      log.error("Failed to update configs for topic " + configUpdatePlan.getFullTopicName(), ex);
+      log.error("Failed to update configs for topic {}", configUpdatePlan.getFullTopicName(), ex);
       throw new RuntimeException(ex);
     }
   }
@@ -97,7 +97,7 @@ public class TopologyBuilderAdminClient {
           adminClient.describeTopics(Collections.singletonList(topic)).all().get();
       return results.get(topic).partitions().size();
     } catch (InterruptedException | ExecutionException e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -108,7 +108,7 @@ public class TopologyBuilderAdminClient {
     try {
       adminClient.createPartitions(map).all().get();
     } catch (InterruptedException | ExecutionException e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -145,7 +145,7 @@ public class TopologyBuilderAdminClient {
     try {
       adminClient.deleteAcls(filters).all().get();
     } catch (ExecutionException | InterruptedException e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -158,7 +158,7 @@ public class TopologyBuilderAdminClient {
     try {
       configs = adminClient.describeConfigs(resources).all().get();
     } catch (InterruptedException | ExecutionException ex) {
-      log.error("{}", ex.getMessage(), ex);
+      log.error(ex.getMessage(), ex);
       throw new RuntimeException(ex);
     }
 
@@ -176,7 +176,7 @@ public class TopologyBuilderAdminClient {
         log.info(e.getMessage());
         return;
       }
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -195,7 +195,7 @@ public class TopologyBuilderAdminClient {
     try {
       adminClient.deleteTopics(topics).all().get();
     } catch (ExecutionException | InterruptedException e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
       throw new IOException(e);
     }
   }
@@ -224,10 +224,10 @@ public class TopologyBuilderAdminClient {
       log.debug("createAcls: {}", aclsDump);
       adminClient.createAcls(acls).all().get();
     } catch (InvalidConfigurationException ex) {
-      log.error("{}", ex.getMessage(), ex);
+      log.error(ex.getMessage(), ex);
       throw ex;
     } catch (ExecutionException | InterruptedException e) {
-      log.error("{}", e.getMessage(), e);
+      log.error(e.getMessage(), e);
     }
   }
 

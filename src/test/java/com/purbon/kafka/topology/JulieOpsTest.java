@@ -189,7 +189,7 @@ public class JulieOpsTest {
 
     doNothing().when(accessControlManager).updatePlan(any(ExecutionPlan.class), anyMap());
 
-    builder.run(new BackendController(stateProcessor), System.out, new VoidAuditor());
+    builder.run(new BackendController(stateProcessor), new VoidAuditor());
     builder.close();
 
     verify(stateProcessor, times(1)).createOrOpen();

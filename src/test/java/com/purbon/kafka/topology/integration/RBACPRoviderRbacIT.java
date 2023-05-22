@@ -68,9 +68,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class RBACPRoviderRbacIT extends MDSBaseTest {
 
-  private String mdsServer = "http://localhost:8090";
-  private String mdsUser = "professor";
-  private String mdsPassword = "professor";
+  private final String mdsServer = "http://localhost:8090";
+  private final String mdsUser = "professor";
+  private final String mdsPassword = "professor";
 
   private MDSApiClient apiClient;
   @Mock private BackendController cs;

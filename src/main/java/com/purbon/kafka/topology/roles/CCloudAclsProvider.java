@@ -6,23 +6,16 @@ import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
 import com.purbon.kafka.topology.api.ccloud.CCloudApi;
 import com.purbon.kafka.topology.utils.CCloudUtils;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class CCloudAclsProvider extends SimpleAclsProvider implements AccessControlProvider {
-
-  private static final Logger LOGGER = LogManager.getLogger(CCloudAclsProvider.class);
 
   private final CCloudApi cli;
   private final String clusterId;
   private final Configuration config;
-  private CCloudUtils cCloudUtils;
+  private final CCloudUtils cCloudUtils;
 
   public CCloudAclsProvider(
       final TopologyBuilderAdminClient adminClient, final Configuration config) throws IOException {
@@ -34,7 +27,7 @@ public class CCloudAclsProvider extends SimpleAclsProvider implements AccessCont
   }
 
   @Override
-  public void createBindings(Set<TopologyAclBinding> bindings) throws IOException {
+  public void createBindings(Collection<TopologyAclBinding> bindings) throws IOException {
     var serviceAccountIdByNameMap = cCloudUtils.initializeLookupTable(this.cli);
     for (TopologyAclBinding binding : bindings) {
       cli.createAcl(
@@ -43,7 +36,7 @@ public class CCloudAclsProvider extends SimpleAclsProvider implements AccessCont
   }
 
   @Override
-  public void clearBindings(Set<TopologyAclBinding> bindings) throws IOException {
+  public void clearBindings(Collection<TopologyAclBinding> bindings) throws IOException {
     var serviceAccountIdByNameMap = cCloudUtils.initializeLookupTable(this.cli);
     for (TopologyAclBinding binding : bindings) {
       cli.deleteAcls(
@@ -64,7 +57,7 @@ public class CCloudAclsProvider extends SimpleAclsProvider implements AccessCont
       }
       return bindings;
     } catch (IOException e) {
-      LOGGER.warn(e);
+      log.warn(e.getMessage(), e);
       return Collections.emptyMap();
     }
   }

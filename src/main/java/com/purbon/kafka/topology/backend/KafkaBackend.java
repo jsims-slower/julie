@@ -7,46 +7,37 @@ import com.purbon.kafka.topology.backend.kafka.RecordReceivedCallback;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Slf4j
 public class KafkaBackend implements Backend, RecordReceivedCallback {
 
-  private static final Logger LOGGER = LogManager.getLogger(KafkaBackend.class);
-
-  private boolean isCompleted;
+  private boolean isCompleted = false;
 
   private KafkaBackendConsumer consumer;
   private KafkaBackendProducer producer;
 
   private AtomicReference<BackendState> latest;
-  private AtomicBoolean shouldWaitForLoad;
+  private final AtomicBoolean shouldWaitForLoad = new AtomicBoolean(true);
+
   private String instanceId;
   private Thread thread;
 
-  public KafkaBackend() {
-    isCompleted = false;
-    shouldWaitForLoad = new AtomicBoolean(true);
-  }
-
+  @RequiredArgsConstructor
   private static class JulieKafkaConsumerThread implements Runnable {
-    private KafkaBackend callback;
-    private KafkaBackendConsumer consumer;
-
-    public JulieKafkaConsumerThread(KafkaBackend callback, KafkaBackendConsumer consumer) {
-      this.callback = callback;
-      this.consumer = consumer;
-    }
+    private final KafkaBackend callback;
+    private final KafkaBackendConsumer consumer;
 
     public void run() {
       consumer.start();
       try {
         consumer.retrieve(callback);
       } catch (WakeupException ex) {
-        LOGGER.trace(ex);
+        log.trace(ex.getMessage(), ex);
       }
     }
   }
@@ -111,7 +102,7 @@ public class KafkaBackend implements Backend, RecordReceivedCallback {
     try {
       thread.join();
     } catch (InterruptedException e) {
-      LOGGER.error(e);
+      log.error(e.getMessage(), e);
     }
     latest = null;
     thread = null;

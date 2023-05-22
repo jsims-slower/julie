@@ -1,7 +1,6 @@
 package com.purbon.kafka.topology.integration.containerutils;
 
 import java.io.Closeable;
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -10,6 +9,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 
 public final class TestStreams implements Closeable {
 
@@ -37,9 +37,8 @@ public final class TestStreams implements Closeable {
         ContainerTestUtils.getSaslConfig(
             bootstrapServers, usernameAndPassword, usernameAndPassword);
     config.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
-    config.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-    config.put(
-        StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+    config.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.StringSerde.class.getName());
+    config.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.StringSerde.class.getName());
     config.put(StreamsConfig.REQUEST_TIMEOUT_MS_CONFIG, "3000");
 
     Properties properties = new Properties();
@@ -49,9 +48,11 @@ public final class TestStreams implements Closeable {
 
   public void start() {
     setUncaughtExceptionHandler(
-        (t, e) ->
-            topicAuthorizationExceptionThrown =
-                ExceptionUtils.indexOfType(e, TopicAuthorizationException.class) > 0);
+        e -> {
+          topicAuthorizationExceptionThrown =
+              ExceptionUtils.indexOfType(e, TopicAuthorizationException.class) > 0;
+          return StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_CLIENT;
+        });
     streams.start();
   }
 
@@ -60,8 +61,9 @@ public final class TestStreams implements Closeable {
     streams.close();
   }
 
-  public void setUncaughtExceptionHandler(UncaughtExceptionHandler eh) {
-    streams.setUncaughtExceptionHandler(eh);
+  public void setUncaughtExceptionHandler(
+      StreamsUncaughtExceptionHandler streamsUncaughtExceptionHandler) {
+    streams.setUncaughtExceptionHandler(streamsUncaughtExceptionHandler);
   }
 
   public boolean isTopicAuthorizationExceptionThrown() {

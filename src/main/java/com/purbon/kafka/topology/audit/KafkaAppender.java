@@ -3,14 +3,16 @@ package com.purbon.kafka.topology.audit;
 import static com.purbon.kafka.topology.Constants.AUDIT_APPENDER_KAFKA_PREFIX;
 
 import com.purbon.kafka.topology.Configuration;
+
+import java.util.Optional;
 import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 public class KafkaAppender implements Appender {
 
-  private Configuration config;
-  private Properties props;
+  private final Configuration config;
+  private final Properties props;
   private KafkaProducer<String, String> producer;
 
   public KafkaAppender(Configuration config) {
@@ -25,7 +27,7 @@ public class KafkaAppender implements Appender {
 
   @Override
   public void close() {
-    producer.close();
+    Optional.ofNullable(producer).ifPresent(KafkaProducer::close);
   }
 
   @Override

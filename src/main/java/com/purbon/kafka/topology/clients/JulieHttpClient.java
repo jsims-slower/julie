@@ -31,17 +31,16 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class JulieHttpClient {
-
-  private static final Logger LOGGER = LogManager.getLogger(JulieHttpClient.class);
 
   private final long DEFAULT_TIMEOUT_MS = 60000;
 
-  private HttpClient httpClient;
-  protected final String server;
+  private final HttpClient httpClient;
+  @Getter protected final String server;
   private String token;
 
   private int retryTimes;
@@ -95,7 +94,7 @@ public class JulieHttpClient {
         var trustManagers = getTrustManagersFromTrustStore(config);
         sslContext.init(keyManagers, trustManagers, null);
       } else {
-        LOGGER.debug("Keystore and Trusstore not configured, connection will be using plain HTTP");
+        log.debug("Keystore and Trusstore not configured, connection will be using plain HTTP");
         sslContext = SSLContext.getDefault();
       }
 
@@ -105,7 +104,7 @@ public class JulieHttpClient {
         | KeyStoreException
         | IOException
         | UnrecoverableKeyException e) {
-      LOGGER.error(e);
+      log.error(e.getMessage(), e);
       throw new IOException(e);
     }
 
@@ -130,7 +129,10 @@ public class JulieHttpClient {
   }
 
   protected KeyManager[] getKeyManagersFromKeyStore(Configuration config)
-      throws NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException,
+      throws NoSuchAlgorithmException,
+          CertificateException,
+          KeyStoreException,
+          IOException,
           UnrecoverableKeyException {
     KeyManagerFactory kmf = KeyManagerFactory.getInstance("PKIX");
     KeyStore ks = loadKeyStore(config.getSslKeyStoreLocation(), config.getSslKeyStorePassword());
@@ -148,7 +150,7 @@ public class JulieHttpClient {
       ks.load(is, password);
       return ks;
     } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException ex) {
-      LOGGER.error(ex);
+      log.error(ex.getMessage(), ex);
       throw ex;
     }
   }
@@ -167,7 +169,7 @@ public class JulieHttpClient {
   }
 
   public String doPost(String url, String body) throws IOException {
-    LOGGER.debug("doPost: " + url + " body: " + body);
+    log.debug("doPost: {} body: {}", url, body);
     HttpRequest request = postRequest(url, body, DEFAULT_TIMEOUT_MS);
     return doRequest(request);
   }
@@ -177,13 +179,13 @@ public class JulieHttpClient {
   }
 
   protected void doPut(String url) throws IOException {
-    LOGGER.debug("doPut: " + url);
+    log.debug("doPut: {}", url);
     HttpRequest request = putRequest(url, DEFAULT_TIMEOUT_MS);
     doRequest(request);
   }
 
   protected String doPut(String url, String body) throws IOException {
-    LOGGER.debug("doPut: " + url + " body: " + body);
+    log.debug("doPut: {} body: {}", url, body);
     HttpRequest request = putRequest(url, ofString(body), DEFAULT_TIMEOUT_MS);
     return doRequest(request);
   }
@@ -201,7 +203,7 @@ public class JulieHttpClient {
   }
 
   public void doDelete(String url, String body) throws IOException {
-    LOGGER.debug("doDelete: " + url + " body: " + body);
+    log.debug("doDelete: {}} body: {}", url, body);
     HttpRequest request = deleteRequest(url, body, DEFAULT_TIMEOUT_MS);
     doRequest(request);
   }
@@ -214,11 +216,11 @@ public class JulieHttpClient {
   }
 
   protected Response doGet(HttpRequest request) throws IOException {
-    LOGGER.debug("method: " + request.method() + " request.uri: " + request.uri());
+    log.debug("method: {} request.uri: {}", request.method(), request.uri());
     try {
       var handler = HttpResponse.BodyHandlers.ofString();
       HttpResponse<String> response = sendAsync(request, handler).get();
-      LOGGER.debug("method: " + request.method() + " response: " + response);
+      log.debug("method: {} response: {}", request.method(), response);
       return new Response(response);
     } catch (Exception ex) {
       throw new IOException(ex);
@@ -226,12 +228,12 @@ public class JulieHttpClient {
   }
 
   private String doRequest(HttpRequest request) throws IOException {
-    LOGGER.debug("method: " + request.method() + " request.uri: " + request.uri());
+    log.debug("method: {} request.uri: {}", request.method(), request.uri());
     String result = "";
     try {
       var handler = HttpResponse.BodyHandlers.ofString();
       HttpResponse<String> response = sendAsync(request, handler).get();
-      LOGGER.debug("method: " + request.method() + " response: " + response);
+      log.debug("method: {} response: {}", request.method(), response);
       int statusCode = response.statusCode();
       if (statusCode < 200 || statusCode > 299) {
         String body = response.body() != null ? response.body() : "";
@@ -282,7 +284,7 @@ public class JulieHttpClient {
   private boolean shouldRetry(HttpResponse<String> response, Throwable throwable, int count) {
     if (response != null && !isRetrievableStatusCode(response) || count >= retryTimes) return false;
     var backoffTime = backoff(count);
-    LOGGER.debug("Sleeping before retry on " + backoffTime + " ms");
+    log.debug("Sleeping before retry on {} ms", backoffTime);
     return true;
   }
 
@@ -296,12 +298,8 @@ public class JulieHttpClient {
       backoff = this.backoffTimesMs + (10 * count);
       Thread.sleep(backoff);
     } catch (Exception ex) {
-      LOGGER.error(ex);
+      log.error(ex.getMessage(), ex);
     }
     return backoff;
-  }
-
-  public String baseUrl() {
-    return server;
   }
 }
