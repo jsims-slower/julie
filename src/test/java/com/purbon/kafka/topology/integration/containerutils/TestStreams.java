@@ -1,5 +1,7 @@
 package com.purbon.kafka.topology.integration.containerutils;
 
+import static org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_CLIENT;
+
 import java.io.Closeable;
 import java.util.Map;
 import java.util.Properties;
@@ -48,10 +50,10 @@ public final class TestStreams implements Closeable {
 
   public void start() {
     setUncaughtExceptionHandler(
-        e -> {
+        t -> {
           topicAuthorizationExceptionThrown =
-              ExceptionUtils.indexOfType(e, TopicAuthorizationException.class) > 0;
-          return StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_CLIENT;
+              ExceptionUtils.indexOfType(t, TopicAuthorizationException.class) > 0;
+          return SHUTDOWN_CLIENT;
         });
     streams.start();
   }
@@ -61,9 +63,8 @@ public final class TestStreams implements Closeable {
     streams.close();
   }
 
-  public void setUncaughtExceptionHandler(
-      StreamsUncaughtExceptionHandler streamsUncaughtExceptionHandler) {
-    streams.setUncaughtExceptionHandler(streamsUncaughtExceptionHandler);
+  public void setUncaughtExceptionHandler(StreamsUncaughtExceptionHandler eh) {
+    streams.setUncaughtExceptionHandler(eh);
   }
 
   public boolean isTopicAuthorizationExceptionThrown() {

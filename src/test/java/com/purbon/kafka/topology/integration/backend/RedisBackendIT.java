@@ -68,8 +68,8 @@ public class RedisBackendIT {
     final SchemaRegistryManager schemaRegistryManager =
         new SchemaRegistryManager(schemaRegistryClient, System.getProperty("user.dir"));
 
-    jedis = new Jedis(redis.getHost(), redis.getFirstMappedPort());
-    backend = new RedisBackend(jedis, bucket);
+    this.jedis = new Jedis(redis.getHost(), redis.getFirstMappedPort());
+    var backend = new RedisBackend(jedis, bucket);
 
     this.plan = ExecutionPlan.init(new BackendController(backend), System.out);
 
@@ -91,7 +91,11 @@ public class RedisBackendIT {
 
   @Test
   public void testStoreAndFetch() throws IOException {
-    backend.load();
+
+    String host = redis.getHost();
+    int port = redis.getFirstMappedPort();
+    RedisBackend rsp = new RedisBackend(host, port, bucket);
+    rsp.load();
 
     TopologyAclBinding binding =
         TopologyAclBinding.build(

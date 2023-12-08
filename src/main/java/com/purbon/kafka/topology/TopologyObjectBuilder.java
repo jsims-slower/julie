@@ -89,20 +89,34 @@ public class TopologyObjectBuilder {
       String fileOrDir, Configuration config, PlanMap plans) throws IOException {
     TopologySerdes parser = new TopologySerdes(config, plans);
     List<Topology> topologies = new ArrayList<>();
-    Path filePath = Paths.get(fileOrDir);
-    if (Files.isDirectory(filePath)) {
-      try (var files = Files.list(filePath)) {
-        files
-            .sorted()
-            .filter(Predicate.not(Files::isDirectory))
-            .map(Path::toFile)
-            .map(parser::deserialise)
-            .forEach(topologies::add);
-      }
+    final Path path = Paths.get(fileOrDir);
+    if (Files.isDirectory(path)) {
+      loadFromDirectory(path, config.isRecursive(), parser, topologies);
     } else {
-      Topology firstTopology = parser.deserialise(new File(fileOrDir));
-      topologies.add(firstTopology);
+      topologies.add(parser.deserialise(new File(fileOrDir)));
     }
     return topologies;
+  }
+
+  private static void loadFromDirectory(
+      final Path directory,
+      final boolean recursive,
+      final TopologySerdes parser,
+      final List<Topology> topologies) {
+    try {
+      Files.list(directory)
+          .sorted()
+          .filter(Predicate.not(Files::isDirectory))
+          .map(path -> parser.deserialise(path.toFile()))
+          .forEach(topologies::add);
+      if (recursive) {
+        Files.list(directory)
+            .sorted()
+            .filter(Files::isDirectory)
+            .forEach(p -> loadFromDirectory(p, recursive, parser, topologies));
+      }
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
