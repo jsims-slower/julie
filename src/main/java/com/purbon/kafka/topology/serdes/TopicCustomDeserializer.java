@@ -117,7 +117,7 @@ public class TopicCustomDeserializer extends StdDeserializer<Topic> {
               .map(Either::getLeft)
               .flatMap(Optional::stream)
               .collect(Collectors.toList());
-      if (errors.size() > 0) {
+      if (!errors.isEmpty()) {
         throw new IOException(errors.get(0));
       }
 

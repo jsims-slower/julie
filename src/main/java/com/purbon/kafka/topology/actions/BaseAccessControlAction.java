@@ -8,15 +8,12 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Getter
 @Slf4j
 @RequiredArgsConstructor
 public abstract class BaseAccessControlAction extends BaseAction {
 
-  @Getter protected final Collection<TopologyAclBinding> aclBindings;
-
-  protected BaseAccessControlAction() {
-    this(new ArrayList<>());
-  }
+  protected final Collection<TopologyAclBinding> aclBindings = new ArrayList<>();
 
   @Override
   public void run() throws IOException {
@@ -37,7 +34,7 @@ public abstract class BaseAccessControlAction extends BaseAction {
   protected abstract void execute() throws IOException;
 
   @Override
-  protected Collection<Map<String, Object>> detailedProps() {
+  protected List<Map<String, Object>> detailedProps() {
     return aclBindings.stream()
         .map(
             binding -> {

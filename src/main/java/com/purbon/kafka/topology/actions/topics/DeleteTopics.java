@@ -5,7 +5,6 @@ import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +31,7 @@ public class DeleteTopics extends BaseAction {
   }
 
   @Override
-  protected Collection<Map<String, Object>> detailedProps() {
+  protected List<Map<String, Object>> detailedProps() {
     return topicsToBeDeleted.stream()
         .map(
             topic -> {

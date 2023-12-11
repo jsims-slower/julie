@@ -7,7 +7,6 @@ import com.purbon.kafka.topology.model.Artefact;
 import com.purbon.kafka.topology.utils.Utils;
 import java.io.IOException;
 import java.util.*;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +39,7 @@ public class SyncArtefactAction extends BaseAction {
   }
 
   @Override
-  protected Collection<Map<String, Object>> detailedProps() {
+  protected List<Map<String, Object>> detailedProps() {
     Map<String, Object> map = new HashMap<>();
     map.put(
         "resource_name",

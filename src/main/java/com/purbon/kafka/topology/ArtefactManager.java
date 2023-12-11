@@ -12,18 +12,16 @@ import com.purbon.kafka.topology.model.artefact.TypeArtefact;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /** Manages Artefacts as defined within the context of the filter class */
+@Slf4j
 public abstract class ArtefactManager implements ExecutionPlanUpdater {
 
-  private static final Logger LOGGER = LogManager.getLogger(ArtefactManager.class);
-
-  protected Map<String, ArtefactClient> clients;
-  protected Configuration config;
-  protected String topologyFileOrDir;
+  protected final Map<String, ArtefactClient> clients;
+  protected final Configuration config;
+  protected final String topologyFileOrDir;
 
   public ArtefactManager(ArtefactClient client, Configuration config, String topologyFileOrDir) {
     this(Collections.singletonMap("default", client), config, topologyFileOrDir);
@@ -54,8 +52,10 @@ public abstract class ArtefactManager implements ExecutionPlanUpdater {
       Set<? extends Artefact> entryArtefacts = parseNewArtefacts(topology);
 
       final var kSqlVarsArtefact =
-          ((Optional<KsqlVarsArtefact>)
-                  entryArtefacts.stream().filter(this::findKsqlVarsArtefact).findFirst())
+          entryArtefacts.stream()
+              .filter(this::findKsqlVarsArtefact)
+              .map(KsqlVarsArtefact.class::cast)
+              .findFirst()
               .orElseGet(() -> new KsqlVarsArtefact(Collections.emptyMap()));
       entryArtefacts.removeIf(this::findKsqlVarsArtefact);
 
@@ -93,8 +93,8 @@ public abstract class ArtefactManager implements ExecutionPlanUpdater {
     if (isAllowDelete()) {
       List<? extends Artefact> toBeDeleted = findArtefactsToBeDeleted(currentArtefacts, artefacts);
 
-      if (toBeDeleted.size() > 0) {
-        LOGGER.debug("Artefacts to be deleted: " + StringUtils.join(toBeDeleted, ","));
+      if (!toBeDeleted.isEmpty()) {
+        log.debug("Artefacts to be deleted: " + StringUtils.join(toBeDeleted, ","));
         for (Artefact artefact : toBeDeleted) {
           ArtefactClient client = selectClient(artefact);
           if (client == null) {
@@ -117,7 +117,7 @@ public abstract class ArtefactManager implements ExecutionPlanUpdater {
   }
 
   protected ArtefactClient selectClient(Artefact artefact) {
-    ArtefactClient defaultClient = clients.containsKey("default") ? clients.get("default") : null;
+    ArtefactClient defaultClient = clients.getOrDefault("default", null);
     return clients.getOrDefault(artefact.getServerLabel(), defaultClient);
   }
 
@@ -126,7 +126,7 @@ public abstract class ArtefactManager implements ExecutionPlanUpdater {
     var currentState = config.fetchStateFromTheCluster() ? getClustersState() : getLocalState(plan);
 
     if (!config.shouldVerifyRemoteState()) {
-      LOGGER.warn(
+      log.warn(
           "Remote state verification disabled, this is not a good practice, be aware"
               + "in future versions, this check is going to become mandatory.");
     }
@@ -152,12 +152,12 @@ public abstract class ArtefactManager implements ExecutionPlanUpdater {
             .filter(localArtifact -> !remoteArtefacts.contains(localArtifact))
             .collect(Collectors.toList());
 
-    if (delta.size() > 0) {
+    if (!delta.isEmpty()) {
       String errorMessage =
           "Your remote state has changed since the last execution, these Artefact(s): "
               + StringUtils.join(delta, ",")
               + " are in your local state, but not in the cluster, please investigate!";
-      LOGGER.error(errorMessage);
+      log.error(errorMessage);
       throw new RemoteValidationException(errorMessage);
     }
   }

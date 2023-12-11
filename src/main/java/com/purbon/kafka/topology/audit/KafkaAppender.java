@@ -3,7 +3,6 @@ package com.purbon.kafka.topology.audit;
 import static com.purbon.kafka.topology.Constants.AUDIT_APPENDER_KAFKA_PREFIX;
 
 import com.purbon.kafka.topology.Configuration;
-
 import java.util.Optional;
 import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;

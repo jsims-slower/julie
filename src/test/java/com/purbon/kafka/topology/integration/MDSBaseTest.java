@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class MDSBaseTest {
 
-  private final ZKClient zkClient= new ZKClient();
+  private final ZKClient zkClient = new ZKClient();
 
   public void beforeEach() throws IOException, InterruptedException {
     zkClient.connect("localhost");

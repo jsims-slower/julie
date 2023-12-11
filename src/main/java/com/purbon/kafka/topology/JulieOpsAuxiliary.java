@@ -6,7 +6,6 @@ import com.purbon.kafka.topology.audit.*;
 import com.purbon.kafka.topology.backend.*;
 import com.purbon.kafka.topology.utils.Pair;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,16 +37,12 @@ public class JulieOpsAuxiliary {
     try {
       @SuppressWarnings("unchecked")
       Class<T> aClass = (Class<T>) Class.forName(classNameString);
-      T newObject;
       try {
-        Constructor<T> constructor = aClass.getConstructor(Configuration.class);
-        newObject = constructor.newInstance(config);
+        return aClass.getConstructor(Configuration.class).newInstance(config);
       } catch (NoSuchMethodException e) {
         log.trace("{} has no config constructor, falling back to a default one", classNameString);
-        Constructor<T> constructor = aClass.getConstructor();
-        newObject = constructor.newInstance();
+        return aClass.getConstructor().newInstance();
       }
-      return newObject;
     } catch (ClassNotFoundException
         | NoSuchMethodException
         | IllegalAccessException

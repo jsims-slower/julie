@@ -5,7 +5,9 @@ import com.purbon.kafka.topology.model.Topic;
 import com.purbon.kafka.topology.model.schema.Subject;
 import com.purbon.kafka.topology.schemas.SchemaRegistryManager;
 import io.confluent.kafka.schemaregistry.ParsedSchema;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -77,7 +79,7 @@ public class RegisterSchemaAction extends BaseAction {
   }
 
   @Override
-  protected Collection<Map<String, Object>> detailedProps() {
+  protected List<Map<String, Object>> detailedProps() {
     return topic.getSchemas().stream()
         .map(
             topicSchemas -> {

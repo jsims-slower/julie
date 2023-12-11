@@ -2,9 +2,8 @@ package com.purbon.kafka.topology.actions.access.builders.rbac;
 
 import com.purbon.kafka.topology.actions.access.builders.AclBindingsBuilder;
 import com.purbon.kafka.topology.actions.access.builders.AclBindingsResult;
-import lombok.RequiredArgsConstructor;
-
 import java.io.IOException;
+import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class SchemaAuthorizationAclBindingsBuilder implements AclBindingsBuilder {

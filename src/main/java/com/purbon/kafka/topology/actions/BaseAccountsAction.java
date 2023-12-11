@@ -2,34 +2,28 @@ package com.purbon.kafka.topology.actions;
 
 import com.purbon.kafka.topology.PrincipalProvider;
 import com.purbon.kafka.topology.model.cluster.ServiceAccount;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 public abstract class BaseAccountsAction extends BaseAction {
 
   protected final PrincipalProvider provider;
-  protected Collection<ServiceAccount> accounts;
-
-  public Collection<ServiceAccount> getPrincipals() {
-    return accounts;
-  }
+  @Getter protected final Collection<ServiceAccount> principals;
 
   @Override
   protected Map<String, Object> props() {
     Map<String, Object> map = new HashMap<>();
     map.put("Operation", getClass().getName());
-    map.put("Principals", accounts);
+    map.put("Principals", principals);
     return map;
   }
 
   @Override
-  protected Collection<Map<String, Object>> detailedProps() {
-    return accounts.stream()
+  protected List<Map<String, Object>> detailedProps() {
+    return principals.stream()
         .map(
             account -> {
               Map<String, Object> map = new HashMap<>();
@@ -52,11 +46,11 @@ public abstract class BaseAccountsAction extends BaseAction {
       return false;
     }
     BaseAccountsAction that = (BaseAccountsAction) o;
-    return Objects.equals(provider, that.provider) && Objects.equals(accounts, that.accounts);
+    return Objects.equals(provider, that.provider) && Objects.equals(principals, that.principals);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(provider, accounts);
+    return Objects.hash(provider, principals);
   }
 }

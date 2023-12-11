@@ -9,7 +9,6 @@ import com.purbon.kafka.topology.model.JulieRoles;
 import com.purbon.kafka.topology.model.Project;
 import com.purbon.kafka.topology.model.Topic;
 import com.purbon.kafka.topology.model.Topology;
-import com.purbon.kafka.topology.model.users.KStream;
 import com.purbon.kafka.topology.serdes.JulieRolesSerdes;
 import com.purbon.kafka.topology.serdes.TopologySerdes.FileType;
 import com.purbon.kafka.topology.utils.BasicAuth;
@@ -21,17 +20,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Slf4j
 public class Configuration {
-
-  private static final Logger LOGGER = LogManager.getLogger(Configuration.class);
 
   private final Map<String, String> cliParams;
   private final Config config;
@@ -226,20 +222,14 @@ public class Configuration {
     // Add internal topics for Kafka Stream Applications
     topologies.stream()
         .flatMap(topology -> topology.getProjects().stream())
-        .flatMap(project -> project.getStreams().stream().map(s -> new Pair(project, s)))
+        .flatMap(project -> project.getStreams().stream().map(s -> new Pair<>(project, s)))
         .forEach(
-            new Consumer<Pair>() {
-              @Override
-              public void accept(Pair pair) {
-                var project = (Project) pair.getKey();
-                var kStream = (KStream) pair.getValue();
-                kStream
+            pair ->
+                pair.getValue()
                     .getApplicationId()
                     .ifPresentOrElse(
                         internalTopicPrefixes::add,
-                        () -> internalTopicPrefixes.add(project.namePrefix()));
-              }
-            });
+                        () -> internalTopicPrefixes.add(pair.getKey().namePrefix())));
 
     return internalTopicPrefixes;
   }
@@ -587,10 +577,10 @@ public class Configuration {
       String path = getString(JULIE_ROLES);
       return serdes.deserialise(Paths.get(path).toFile());
     } catch (ConfigException.Missing | ConfigException.WrongType ex) {
-      LOGGER.debug(ex);
+      log.debug(ex.getMessage(), ex);
       return new JulieRoles();
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error(e.getMessage(), e);
       throw e;
     }
   }

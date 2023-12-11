@@ -21,30 +21,31 @@ import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ExecutionPlan {
 
-  private final List<Action> plan;
+  @Getter private final List<Action> actions;
   private final PrintStream outputStream;
   private final BackendController backendController;
 
-  private Set<TopologyAclBinding> bindings;
-  private Set<ServiceAccount> serviceAccounts;
-  private Set<String> topics;
-  private Set<KafkaConnectArtefact> connectors;
+  @Getter private Set<TopologyAclBinding> bindings;
+  @Getter private Set<ServiceAccount> serviceAccounts;
+  @Getter private Set<String> topics;
+  @Getter private Set<KafkaConnectArtefact> connectors;
   private Set<KsqlStreamArtefact> ksqlStreams;
   private Set<KsqlTableArtefact> ksqlTables;
 
   private final Auditor auditor;
 
   private ExecutionPlan(
-      List<Action> plan,
+      List<Action> actions,
       PrintStream outputStream,
       BackendController backendController,
       Auditor auditor) {
-    this.plan = plan;
+    this.actions = actions;
     this.outputStream = outputStream;
     this.auditor = auditor;
 
@@ -67,7 +68,7 @@ public class ExecutionPlan {
   }
 
   public void add(Action action) {
-    this.plan.add(action);
+    this.actions.add(action);
   }
 
   public static ExecutionPlan init(BackendController backendController, PrintStream outputStream)
@@ -88,7 +89,7 @@ public class ExecutionPlan {
   }
 
   public void run(boolean dryRun) throws IOException {
-    for (Action action : plan) {
+    for (Action action : actions) {
       try {
         execute(action, dryRun);
       } catch (IOException e) {
@@ -184,26 +185,6 @@ public class ExecutionPlan {
         }
       }
     }
-  }
-
-  public Set<ServiceAccount> getServiceAccounts() {
-    return serviceAccounts;
-  }
-
-  public Set<TopologyAclBinding> getBindings() {
-    return bindings;
-  }
-
-  public Set<String> getTopics() {
-    return topics;
-  }
-
-  public List<Action> getActions() {
-    return plan;
-  }
-
-  public Set<KafkaConnectArtefact> getConnectors() {
-    return connectors;
   }
 
   public Set<? extends KsqlArtefact> getKSqlArtefacts() {

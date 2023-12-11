@@ -1,10 +1,9 @@
 package com.purbon.kafka.topology.actions.access.builders;
 
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
+import java.util.Collection;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-
-import java.util.Collection;
 
 @Getter
 @RequiredArgsConstructor

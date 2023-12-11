@@ -4,8 +4,10 @@ import com.purbon.kafka.topology.clients.ArtefactClient;
 import com.purbon.kafka.topology.model.Artefact;
 import com.purbon.kafka.topology.model.artefact.TypeArtefact;
 import java.io.IOException;
-import java.util.*;
-
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +41,7 @@ public class DeleteArtefactAction extends BaseAction {
   }
 
   @Override
-  protected Collection<Map<String, Object>> detailedProps() {
+  protected List<Map<String, Object>> detailedProps() {
     Map<String, Object> map = new HashMap<>();
     map.put(
         "resource_name",

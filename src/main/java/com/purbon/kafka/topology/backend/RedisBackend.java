@@ -5,7 +5,6 @@ import com.purbon.kafka.topology.Configuration;
 import com.purbon.kafka.topology.utils.JSON;
 import java.io.IOException;
 import java.util.Optional;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import redis.clients.jedis.Jedis;

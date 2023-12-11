@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class TopologyObjectBuilder {
@@ -103,18 +102,17 @@ public class TopologyObjectBuilder {
       final boolean recursive,
       final TopologySerdes parser,
       final List<Topology> topologies) {
-    try {
-      Files.list(directory)
+    try (var files = Files.list(directory)) {
+      files
           .sorted()
-          .filter(Predicate.not(Files::isDirectory))
-          .map(path -> parser.deserialise(path.toFile()))
-          .forEach(topologies::add);
-      if (recursive) {
-        Files.list(directory)
-            .sorted()
-            .filter(Files::isDirectory)
-            .forEach(p -> loadFromDirectory(p, recursive, parser, topologies));
-      }
+          .forEach(
+              path -> {
+                if (!Files.isDirectory(path)) {
+                  topologies.add(parser.deserialise(path.toFile()));
+                } else if (recursive) {
+                  loadFromDirectory(path, recursive, parser, topologies);
+                }
+              });
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }

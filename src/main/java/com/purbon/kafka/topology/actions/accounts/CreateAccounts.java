@@ -17,14 +17,15 @@ public class CreateAccounts extends BaseAccountsAction {
 
   @Override
   public void run() throws IOException {
-    log.debug("CreatePrincipals {}", accounts);
+    log.debug("CreatePrincipals {}", principals);
     Set<ServiceAccount> mappedAccounts = new HashSet<>();
-    for (ServiceAccount account : accounts) {
+    for (ServiceAccount account : principals) {
       ServiceAccount sa =
           provider.createServiceAccount(account.getName(), account.getDescription());
       mappedAccounts.add(sa);
     }
-    accounts = mappedAccounts;
+    principals.clear();
+    principals.addAll(mappedAccounts);
   }
 
   @Override

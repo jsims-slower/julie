@@ -3,10 +3,9 @@ package com.purbon.kafka.topology.actions.accounts;
 import com.purbon.kafka.topology.PrincipalProvider;
 import com.purbon.kafka.topology.actions.BaseAccountsAction;
 import com.purbon.kafka.topology.model.cluster.ServiceAccount;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.util.Collection;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ClearAccounts extends BaseAccountsAction {
@@ -17,8 +16,8 @@ public class ClearAccounts extends BaseAccountsAction {
 
   @Override
   public void run() throws IOException {
-    log.debug("ClearPrincipals {}", accounts);
-    for (ServiceAccount account : accounts) {
+    log.debug("ClearPrincipals {}", principals);
+    for (ServiceAccount account : principals) {
       provider.deleteServiceAccount(account);
     }
   }

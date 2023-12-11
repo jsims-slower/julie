@@ -100,7 +100,7 @@ public class TopicManager implements ExecutionPlanUpdater {
               .filter(topic -> !topics.containsKey(topic) && !isAnInternalTopics(topic))
               .collect(Collectors.toList());
 
-      if (topicsToBeDeleted.size() > 0) {
+      if (!topicsToBeDeleted.isEmpty()) {
         log.debug("Topic to be deleted: {}", topicsToBeDeleted);
         plan.add(new DeleteTopics(adminClient, topicsToBeDeleted));
       }
@@ -160,7 +160,7 @@ public class TopicManager implements ExecutionPlanUpdater {
             .filter(localTopic -> !remoteTopics.contains(localTopic))
             .collect(Collectors.toList());
 
-    if (delta.size() > 0) {
+    if (!delta.isEmpty()) {
       String errorMessage =
           "Your remote state has changed since the last execution, this topics: "
               + StringUtils.join(delta, ",")
@@ -176,7 +176,7 @@ public class TopicManager implements ExecutionPlanUpdater {
 
   private boolean matchesPrefixList(String topic) {
     boolean matches =
-        managedPrefixes.size() == 0 || managedPrefixes.stream().anyMatch(topic::startsWith);
+        managedPrefixes.isEmpty() || managedPrefixes.stream().anyMatch(topic::startsWith);
     log.debug("Topic {} matches {} with {}", topic, matches, managedPrefixes);
     return matches;
   }

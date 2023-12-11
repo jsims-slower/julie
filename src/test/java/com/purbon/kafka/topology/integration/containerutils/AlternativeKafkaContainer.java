@@ -1,5 +1,7 @@
 package com.purbon.kafka.topology.integration.containerutils;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import java.nio.charset.StandardCharsets;
@@ -7,8 +9,6 @@ import java.util.concurrent.TimeUnit;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * An alternative KafkaContainer that is easier to extend than the one from the testcontainers

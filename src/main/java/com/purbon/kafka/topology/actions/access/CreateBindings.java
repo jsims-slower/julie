@@ -4,7 +4,10 @@ import com.purbon.kafka.topology.AccessControlProvider;
 import com.purbon.kafka.topology.actions.BaseAccessControlAction;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -13,7 +16,7 @@ public class CreateBindings extends BaseAccessControlAction {
   private final AccessControlProvider controlProvider;
 
   public CreateBindings(AccessControlProvider controlProvider, Set<TopologyAclBinding> bindings) {
-    super(bindings);
+    this.aclBindings.addAll(bindings);
     this.controlProvider = controlProvider;
   }
 

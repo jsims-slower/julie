@@ -14,6 +14,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+@Getter
 @Slf4j
 public class BackendController {
 
@@ -24,8 +25,8 @@ public class BackendController {
     APPEND
   }
 
-  @Getter private final Backend backend;
-  @Getter private BackendState state;
+  private final Backend backend;
+  private BackendState state;
 
   public BackendController() {
     this(new FileBackend());

@@ -13,16 +13,10 @@ import com.purbon.kafka.topology.integration.containerutils.SaslPlaintextKafkaCo
 import com.purbon.kafka.topology.model.Artefact;
 import com.purbon.kafka.topology.model.artefact.KafkaConnectArtefact;
 import java.io.IOException;
+import java.util.*;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import java.util.*;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;

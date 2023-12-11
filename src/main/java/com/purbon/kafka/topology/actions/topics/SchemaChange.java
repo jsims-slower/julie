@@ -8,9 +8,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 final class SchemaChange {
   public static final Comparator<SchemaChange> comparator =
       Comparator.comparing(SchemaChange::getSubjectName);
@@ -27,13 +25,15 @@ final class SchemaChange {
       Subject subject,
       String subjectName,
       ParsedSchema parsedSchema) {
-    this(
-        schemaRegistryManager,
-        subject,
-        subjectName,
-        parsedSchema,
-        schemaRegistryManager.getId(subjectName, parsedSchema),
-        schemaRegistryManager.getCompatibility(subjectName));
+    this.schemaRegistryManager = schemaRegistryManager;
+    this.subject = subject;
+    this.subjectName = subjectName;
+    this.parsedSchema = parsedSchema;
+
+    schemaId = schemaRegistryManager.getId(subjectName, parsedSchema);
+
+    this.currentCompatibility =
+        schemaId != null ? schemaRegistryManager.getCompatibility(subjectName) : null;
   }
 
   public boolean hasChanges() {

@@ -16,14 +16,13 @@ import org.apache.kafka.common.errors.WakeupException;
 @Slf4j
 public class KafkaBackend implements Backend, RecordReceivedCallback {
 
-  private boolean isCompleted = false;
+  private boolean isCompleted;
 
   private KafkaBackendConsumer consumer;
   private KafkaBackendProducer producer;
 
   private AtomicReference<BackendState> latest;
   private final AtomicBoolean shouldWaitForLoad = new AtomicBoolean(true);
-
   private String instanceId;
   private Thread thread;
 

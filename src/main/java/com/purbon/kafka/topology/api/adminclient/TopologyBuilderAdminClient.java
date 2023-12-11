@@ -4,14 +4,30 @@ import com.purbon.kafka.topology.actions.topics.TopicConfigUpdatePlan;
 import com.purbon.kafka.topology.model.Topic;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.admin.*;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AlterConfigOp;
 import org.apache.kafka.clients.admin.AlterConfigOp.OpType;
-import org.apache.kafka.common.acl.*;
+import org.apache.kafka.clients.admin.Config;
+import org.apache.kafka.clients.admin.ConfigEntry;
+import org.apache.kafka.clients.admin.ListTopicsOptions;
+import org.apache.kafka.clients.admin.NewPartitions;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.acl.AccessControlEntryFilter;
+import org.apache.kafka.common.acl.AclBinding;
+import org.apache.kafka.common.acl.AclBindingFilter;
+import org.apache.kafka.common.acl.AclOperation;
+import org.apache.kafka.common.acl.AclPermissionType;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.config.ConfigResource.Type;
 import org.apache.kafka.common.errors.InvalidConfigurationException;
@@ -93,9 +109,13 @@ public class TopologyBuilderAdminClient {
 
   public int getPartitionCount(String topic) throws IOException {
     try {
-      Map<String, TopicDescription> results =
-          adminClient.describeTopics(Collections.singletonList(topic)).allTopicNames().get();
-      return results.get(topic).partitions().size();
+      return adminClient
+          .describeTopics(Collections.singletonList(topic))
+          .allTopicNames()
+          .get()
+          .get(topic)
+          .partitions()
+          .size();
     } catch (InterruptedException | ExecutionException e) {
       log.error(e.getMessage(), e);
       throw new IOException(e);
@@ -103,8 +123,8 @@ public class TopologyBuilderAdminClient {
   }
 
   public void updatePartitionCount(Topic topic, String topicName) throws IOException {
-    Map<String, NewPartitions> map = new HashMap<>();
-    map.put(topicName, NewPartitions.increaseTo(topic.partitionsCount()));
+    Map<String, NewPartitions> map =
+        Collections.singletonMap(topicName, NewPartitions.increaseTo(topic.partitionsCount()));
     try {
       adminClient.createPartitions(map).all().get();
     } catch (InterruptedException | ExecutionException e) {
@@ -114,14 +134,10 @@ public class TopologyBuilderAdminClient {
   }
 
   public void clearAcls() throws IOException {
-    Collection<AclBindingFilter> filters = new ArrayList<>();
-    filters.add(AclBindingFilter.ANY);
-    clearAcls(filters);
+    clearAcls(Collections.singletonList(AclBindingFilter.ANY));
   }
 
   public void clearAcls(TopologyAclBinding aclBinding) throws IOException {
-    Collection<AclBindingFilter> filters = new ArrayList<>();
-
     log.debug("clearAcl = {}", aclBinding);
     ResourcePatternFilter resourceFilter =
         new ResourcePatternFilter(
@@ -137,8 +153,7 @@ public class TopologyBuilderAdminClient {
             AclPermissionType.ANY);
 
     AclBindingFilter filter = new AclBindingFilter(resourceFilter, accessControlEntryFilter);
-    filters.add(filter);
-    clearAcls(filters);
+    clearAcls(Collections.singletonList(filter));
   }
 
   private void clearAcls(Collection<AclBindingFilter> filters) throws IOException {
@@ -154,15 +169,12 @@ public class TopologyBuilderAdminClient {
     ConfigResource resource = new ConfigResource(Type.TOPIC, topic);
     Collection<ConfigResource> resources = Collections.singletonList(resource);
 
-    final Map<ConfigResource, Config> configs;
     try {
-      configs = adminClient.describeConfigs(resources).all().get();
+      return adminClient.describeConfigs(resources).all().get().get(resource);
     } catch (InterruptedException | ExecutionException ex) {
       log.error(ex.getMessage(), ex);
       throw new RuntimeException(ex);
     }
-
-    return configs.get(resource);
   }
 
   public void createTopic(Topic topic, String fullTopicName) throws IOException {
@@ -182,8 +194,7 @@ public class TopologyBuilderAdminClient {
   }
 
   public void createTopic(String topicName) throws IOException {
-    Topic topic = new Topic();
-    createTopic(topic, topicName);
+    createTopic(new Topic(), topicName);
   }
 
   private void createAllTopics(Collection<NewTopic> newTopics)
@@ -201,21 +212,15 @@ public class TopologyBuilderAdminClient {
   }
 
   public Map<String, Collection<AclBinding>> fetchAclsList() {
-    Map<String, Collection<AclBinding>> acls = new HashMap<>();
-
     try {
-      Collection<AclBinding> list = adminClient.describeAcls(AclBindingFilter.ANY).values().get();
-      list.forEach(
-          aclBinding -> {
-            String name = aclBinding.pattern().name();
-            Collection<AclBinding> updatedList = acls.computeIfAbsent(name, k -> new ArrayList<>());
-            updatedList.add(aclBinding);
-            acls.put(name, updatedList);
-          });
+      return adminClient.describeAcls(AclBindingFilter.ANY).values().get().stream()
+          .collect(
+              Collectors.groupingBy(
+                  aclBinding -> aclBinding.pattern().name(),
+                  Collectors.toCollection(ArrayList::new)));
     } catch (Exception e) {
       return new HashMap<>();
     }
-    return acls;
   }
 
   public void createAcls(Collection<AclBinding> acls) {

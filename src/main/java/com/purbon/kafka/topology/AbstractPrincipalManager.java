@@ -70,7 +70,7 @@ abstract class AbstractPrincipalManager implements ExecutionPlanUpdater {
 
   private boolean matchesPrefixList(String principal) {
     boolean matches =
-        managedPrefixes.size() == 0 || managedPrefixes.stream().anyMatch(principal::startsWith);
+        managedPrefixes.isEmpty() || managedPrefixes.stream().anyMatch(principal::startsWith);
     log.debug("Principal {} matches {} with {}", principal, matches, managedPrefixes);
     return matches;
   }

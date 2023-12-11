@@ -2,7 +2,6 @@ package com.purbon.kafka.topology.actions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.purbon.kafka.topology.utils.JSON;
-
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -15,13 +14,14 @@ public abstract class BaseAction implements Action {
   protected abstract Collection<Map<String, Object>> detailedProps();
 
   @Override
-  public Collection<String> refs() {
+  public List<String> refs() {
     return detailedProps().stream()
         .map(
             map -> {
               try {
                 return JSON.asPrettyString(map);
               } catch (JsonProcessingException ex) {
+                // TODO: Swallowing exceptions is dangerous
                 return "";
               }
             })
@@ -34,6 +34,7 @@ public abstract class BaseAction implements Action {
       final Map<String, Object> props = props();
       return props.isEmpty() ? "" : JSON.asPrettyString(props);
     } catch (JsonProcessingException e) {
+      // TODO: Swallowing exceptions is dangerous
       return "";
     }
   }

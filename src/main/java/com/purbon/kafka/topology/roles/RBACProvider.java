@@ -59,13 +59,10 @@ public class RBACProvider implements AccessControlProvider {
   @Override
   public Map<String, List<TopologyAclBinding>> listAcls() {
     Map<String, List<TopologyAclBinding>> map = new HashMap<>();
-    List<String> roleNames = apiClient.getRoleNames();
-    for (String roleName : roleNames) {
-      List<String> principalNames = apiClient.lookupKafkaPrincipalsByRoleForKafka(roleName);
-      for (String principalName : principalNames) {
-        List<RbacResourceType> resources =
-            apiClient.lookupResourcesForKafka(principalName, roleName);
-        for (RbacResourceType resource : resources) {
+    for (String roleName : apiClient.getRoleNames()) {
+      for (String principalName : apiClient.lookupKafkaPrincipalsByRoleForKafka(roleName)) {
+        for (RbacResourceType resource :
+            apiClient.lookupResourcesForKafka(principalName, roleName)) {
           if (!map.containsKey(resource.getName())) {
             map.put(resource.getName(), new ArrayList<>());
           }

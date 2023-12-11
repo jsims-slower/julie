@@ -6,13 +6,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.cli.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Slf4j
 public class CommandLineInterface {
-
-  private static final Logger LOGGER = LogManager.getLogger(CommandLineInterface.class);
 
   public static final String TOPOLOGY_OPTION = "topology";
   public static final String TOPOLOGY_DESC = "Topology config file.";
@@ -51,15 +49,9 @@ public class CommandLineInterface {
 
   public static final String APP_NAME = "julie-ops";
 
-  private HelpFormatter formatter;
-  private CommandLineParser parser;
-  private Options options;
-
-  public CommandLineInterface() {
-    formatter = new HelpFormatter();
-    parser = new DefaultParser();
-    options = buildOptions();
-  }
+  private final HelpFormatter formatter = new HelpFormatter();
+  private final CommandLineParser parser = new DefaultParser();
+  private final Options options = buildOptions();
 
   private Options buildOptions() {
 
@@ -190,8 +182,6 @@ public class CommandLineInterface {
     config.put(
         OVERRIDING_CLIENT_CONFIG_OPTION, cmd.getOptionValue(OVERRIDING_CLIENT_CONFIG_OPTION));
     config.put(CLIENT_CONFIG_OPTION, cmd.getOptionValue(CLIENT_CONFIG_OPTION));
-    config.put(
-        OVERRIDING_CLIENT_CONFIG_OPTION, cmd.getOptionValue(OVERRIDING_CLIENT_CONFIG_OPTION));
     return config;
   }
 

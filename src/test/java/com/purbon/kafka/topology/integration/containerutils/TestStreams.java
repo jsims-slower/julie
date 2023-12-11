@@ -5,6 +5,7 @@ import static org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.St
 import java.io.Closeable;
 import java.util.Map;
 import java.util.Properties;
+import lombok.Getter;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.kafka.common.serialization.Serdes;
@@ -16,7 +17,7 @@ import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 public final class TestStreams implements Closeable {
 
   private final KafkaStreams streams;
-  private boolean topicAuthorizationExceptionThrown;
+  @Getter private boolean topicAuthorizationExceptionThrown;
 
   private TestStreams(final KafkaStreams streams) {
     this.streams = streams;
@@ -65,9 +66,5 @@ public final class TestStreams implements Closeable {
 
   public void setUncaughtExceptionHandler(StreamsUncaughtExceptionHandler eh) {
     streams.setUncaughtExceptionHandler(eh);
-  }
-
-  public boolean isTopicAuthorizationExceptionThrown() {
-    return topicAuthorizationExceptionThrown;
   }
 }
