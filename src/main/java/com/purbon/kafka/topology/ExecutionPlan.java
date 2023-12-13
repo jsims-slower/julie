@@ -15,10 +15,10 @@ import com.purbon.kafka.topology.model.artefact.KsqlStreamArtefact;
 import com.purbon.kafka.topology.model.artefact.KsqlTableArtefact;
 import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
-import com.purbon.kafka.topology.utils.StreamUtils;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
@@ -125,17 +125,19 @@ public class ExecutionPlan {
       } else if (action instanceof DeleteTopics) {
         List<String> topicsToBeDeleted = ((DeleteTopics) action).getTopicsToBeDeleted();
         topics =
-            new StreamUtils<>(topics.stream())
-                .filterAsSet(topic -> !topicsToBeDeleted.contains(topic));
+            topics.stream()
+                .filter(Predicate.not(topicsToBeDeleted::contains))
+                .collect(Collectors.toSet());
       }
       if (action instanceof BaseAccessControlAction
           && !((BaseAccessControlAction) action).getAclBindings().isEmpty()) {
         if (action instanceof ClearBindings) {
           bindings =
-              new StreamUtils<>(bindings.stream())
-                  .filterAsSet(
+              bindings.stream()
+                  .filter(
                       binding ->
-                          !((BaseAccessControlAction) action).getAclBindings().contains(binding));
+                          !((BaseAccessControlAction) action).getAclBindings().contains(binding))
+                  .collect(Collectors.toSet());
         } else {
           bindings.addAll(((BaseAccessControlAction) action).getAclBindings());
         }
@@ -144,8 +146,9 @@ public class ExecutionPlan {
         if (action instanceof ClearAccounts) {
           Collection<ServiceAccount> toDeletePrincipals = ((ClearAccounts) action).getPrincipals();
           serviceAccounts =
-              new StreamUtils<>(serviceAccounts.stream())
-                  .filterAsSet(sa -> !toDeletePrincipals.contains(sa));
+              serviceAccounts.stream()
+                  .filter(Predicate.not(toDeletePrincipals::contains))
+                  .collect(Collectors.toSet());
         } else {
           CreateAccounts createAction = (CreateAccounts) action;
           serviceAccounts.addAll(createAction.getPrincipals());
@@ -165,23 +168,28 @@ public class ExecutionPlan {
         Artefact artefact = ((SyncArtefactAction) action).getArtefact();
         if (artefact instanceof KafkaConnectArtefact) {
           connectors =
-              new StreamUtils<>(connectors.stream())
-                  .filterAsSet(connector -> !connector.equals(artefact));
+              connectors.stream()
+                  .filter(Predicate.not(artefact::equals))
+                  .collect(Collectors.toSet());
           connectors.add((KafkaConnectArtefact) artefact);
         }
       } else if (action instanceof DeleteArtefactAction) {
         Artefact toBeDeleted = ((DeleteArtefactAction) action).getArtefact();
         if (toBeDeleted instanceof KafkaConnectArtefact) {
           connectors =
-              new StreamUtils<>(connectors.stream())
-                  .filterAsSet(connector -> !connector.equals(toBeDeleted));
+              connectors.stream()
+                  .filter(Predicate.not(toBeDeleted::equals))
+                  .collect(Collectors.toSet());
         } else if (toBeDeleted instanceof KsqlStreamArtefact) {
           ksqlStreams =
-              new StreamUtils<>(ksqlStreams.stream())
-                  .filterAsSet(ksql -> !ksql.equals(toBeDeleted));
+              ksqlStreams.stream()
+                  .filter(Predicate.not(toBeDeleted::equals))
+                  .collect(Collectors.toSet());
         } else if (toBeDeleted instanceof KsqlTableArtefact) {
           ksqlTables =
-              new StreamUtils<>(ksqlTables.stream()).filterAsSet(ksql -> !ksql.equals(toBeDeleted));
+              ksqlTables.stream()
+                  .filter(Predicate.not(toBeDeleted::equals))
+                  .collect(Collectors.toSet());
         }
       }
     }

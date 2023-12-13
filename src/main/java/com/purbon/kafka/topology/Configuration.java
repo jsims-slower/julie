@@ -12,7 +12,6 @@ import com.purbon.kafka.topology.model.Topology;
 import com.purbon.kafka.topology.serdes.JulieRolesSerdes;
 import com.purbon.kafka.topology.serdes.TopologySerdes.FileType;
 import com.purbon.kafka.topology.utils.BasicAuth;
-import com.purbon.kafka.topology.utils.Pair;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
@@ -221,15 +220,18 @@ public class Configuration {
     var internalTopicPrefixes = getKafkaInternalTopicPrefixes();
     // Add internal topics for Kafka Stream Applications
     topologies.stream()
-        .flatMap(topology -> topology.getProjects().stream())
-        .flatMap(project -> project.getStreams().stream().map(s -> new Pair<>(project, s)))
+        .map(Topology::getProjects)
+        .flatMap(Collection::stream)
         .forEach(
-            pair ->
-                pair.getValue()
-                    .getApplicationId()
-                    .ifPresentOrElse(
-                        internalTopicPrefixes::add,
-                        () -> internalTopicPrefixes.add(pair.getKey().namePrefix())));
+            project ->
+                project
+                    .getStreams()
+                    .forEach(
+                        s ->
+                            s.getApplicationId()
+                                .ifPresentOrElse(
+                                    internalTopicPrefixes::add,
+                                    () -> internalTopicPrefixes.add(project.namePrefix()))));
 
     return internalTopicPrefixes;
   }
@@ -498,26 +500,20 @@ public class Configuration {
     List<String> servers = config.getStringList(PLATFORM_SERVERS_CONNECT);
     return servers.stream()
         .map(server -> server.split(":"))
-        .map(
-            strings -> {
-              String key = strings[0].strip();
-              String value = String.join(":", Arrays.copyOfRange(strings, 1, strings.length));
-              return new Pair<>(key, value);
-            })
-        .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        .collect(
+            Collectors.toMap(
+                strings -> strings[0].strip(),
+                strings -> String.join(":", Arrays.copyOfRange(strings, 1, strings.length))));
   }
 
   public Map<String, String> getServersBasicAuthMap() {
     List<String> basicAuths = config.getStringList(PLATFORM_SERVERS_BASIC_AUTH);
     return basicAuths.stream()
         .map(s -> s.split("@"))
-        .map(
-            strings -> {
-              String key = strings[0].strip(); // label
-              String value = String.join(":", Arrays.copyOfRange(strings, 1, strings.length));
-              return new Pair<>(key, value);
-            })
-        .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        .collect(
+            Collectors.toMap(
+                strings -> strings[0].strip(), // label
+                strings -> String.join(":", Arrays.copyOfRange(strings, 1, strings.length))));
   }
 
   public KsqlClientConfig getKSQLClientConfig() {

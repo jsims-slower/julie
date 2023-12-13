@@ -8,7 +8,6 @@ import com.purbon.kafka.topology.model.artefact.KsqlArtefact;
 import com.purbon.kafka.topology.model.artefact.KsqlArtefacts;
 import com.purbon.kafka.topology.model.artefact.KsqlStreamArtefact;
 import com.purbon.kafka.topology.model.artefact.KsqlTableArtefact;
-import com.purbon.kafka.topology.utils.Either;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -19,12 +18,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class KSqlArtefactManager extends ArtefactManager {
-
-  private static final Logger LOGGER = LogManager.getLogger(KSqlArtefactManager.class);
 
   public KSqlArtefactManager(
       ArtefactClient client, Configuration config, String topologyFileOrDir) {
@@ -76,53 +73,24 @@ public class KSqlArtefactManager extends ArtefactManager {
 
   @Override
   protected Collection<? extends Artefact> getClustersState() throws IOException {
-    List<Either> list =
-        clients.values().stream()
-            .map(
-                client -> {
-                  try {
-                    Collection<? extends Artefact> artefacts = client.getClusterState();
-                    if (artefacts.isEmpty()) {
-                      return Either.Right(null);
-                    }
-                    return Either.Right(artefacts);
-                  } catch (IOException ex) {
-                    return Either.Left(ex);
-                  }
-                })
-            .collect(Collectors.toList());
-
-    List<IOException> errors =
-        list.stream()
-            .filter(Either::isLeft)
-            .map(e -> (IOException) e.getLeft().get())
-            .collect(Collectors.toList());
-    if (errors.size() > 0) {
-      throw new IOException(errors.get(0));
+    var ksqlArtefacts = new HashSet<KsqlArtefact>();
+    for (var client : clients.values()) {
+      client
+          .getClusterState()
+          .forEach(
+              artefact -> {
+                if (artefact instanceof KsqlStreamArtefact) {
+                  ksqlArtefacts.add(
+                      new KsqlStreamArtefact(artefact.getPath(), null, artefact.getName()));
+                } else if (artefact instanceof KsqlTableArtefact) {
+                  ksqlArtefacts.add(
+                      new KsqlTableArtefact(artefact.getPath(), null, artefact.getName()));
+                } else {
+                  log.error("KSQL Artefact of wrong type " + artefact.getClass());
+                }
+              });
     }
-
-    return list.stream()
-        .filter(Either::isRight)
-        .flatMap(
-            (Function<Either, Stream<? extends Artefact>>)
-                either -> {
-                  Collection<? extends Artefact> artefacts =
-                      (Collection<? extends Artefact>) either.getRight().get();
-                  return artefacts.stream();
-                })
-        .map(
-            artefact -> {
-              if (artefact instanceof KsqlStreamArtefact) {
-                return new KsqlStreamArtefact(artefact.getPath(), null, artefact.getName());
-              } else if (artefact instanceof KsqlTableArtefact) {
-                return new KsqlTableArtefact(artefact.getPath(), null, artefact.getName());
-              } else {
-                LOGGER.error("KSQL Artefact of wrong type " + artefact.getClass());
-                return null;
-              }
-            })
-        .filter(Objects::nonNull)
-        .collect(Collectors.toSet());
+    return ksqlArtefacts;
   }
 
   @Override
@@ -134,7 +102,7 @@ public class KSqlArtefactManager extends ArtefactManager {
                   KsqlArtefacts kSql = project.getKsqlArtefacts();
                   return Stream.concat(
                       Stream.concat(kSql.getStreams().stream(), kSql.getTables().stream()),
-                      Collections.singletonList(kSql.getVars()).stream());
+                      Stream.of(kSql.getVars()));
                 })
         .sorted()
         .collect(Collectors.toCollection(LinkedHashSet::new));

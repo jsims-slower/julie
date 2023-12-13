@@ -9,12 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class PrincipalUpdateManager extends AbstractPrincipalManager {
-
-  private static final Logger LOGGER = LogManager.getLogger(PrincipalUpdateManager.class);
 
   public PrincipalUpdateManager(PrincipalProvider provider, Configuration config) {
     super(provider, config);
@@ -26,13 +24,10 @@ public class PrincipalUpdateManager extends AbstractPrincipalManager {
       Topology topology,
       List<String> principals,
       Map<String, ServiceAccount> accounts) {
-    LOGGER.debug(
-        "Updating accounts for principals = "
-            + principals.stream().collect(Collectors.joining(","))
-            + " accounts = "
-            + accounts.values().stream()
-                .map(ServiceAccount::toString)
-                .collect(Collectors.joining(", ")));
+    log.debug(
+        "Updating accounts for principals = {} accounts = {}",
+        String.join(",", principals),
+        accounts.values().stream().map(ServiceAccount::toString).collect(Collectors.joining(", ")));
     // build set of principals to be created.
     Set<ServiceAccount> principalsToBeCreated =
         principals.stream()

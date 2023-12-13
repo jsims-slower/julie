@@ -4,73 +4,63 @@ import com.purbon.kafka.topology.exceptions.ValidationException;
 import com.purbon.kafka.topology.model.Project;
 import com.purbon.kafka.topology.model.Topic;
 import com.purbon.kafka.topology.model.Topology;
-import com.purbon.kafka.topology.utils.Either;
 import com.purbon.kafka.topology.validation.TopicValidation;
 import com.purbon.kafka.topology.validation.TopologyValidation;
 import com.purbon.kafka.topology.validation.Validation;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class TopologyValidator {
-
-  private static final Logger LOGGER = LogManager.getLogger(TopologyValidator.class);
 
   private final Configuration config;
 
-  public TopologyValidator(Configuration config) {
-    this.config = config;
-  }
-
   public List<String> validate(Topology topology) {
 
-    Stream<Either<Boolean, ValidationException>> streamOfTopologyResults =
+    var streamOfTopologyResults =
         validations().stream()
             .filter(p -> p instanceof TopologyValidation)
-            .map(validation -> (TopologyValidation) validation)
-            .map(
+            .map(TopologyValidation.class::cast)
+            .flatMap(
                 validation -> {
                   try {
                     validation.valid(topology);
-                    return Either.Left(true);
+                    return Stream.empty();
                   } catch (ValidationException validationError) {
-                    return Either.Right(validationError);
+                    return Stream.of(validationError);
                   }
                 });
 
     List<TopicValidation> listOfTopicValidations =
         validations().stream()
             .filter(p -> p instanceof TopicValidation)
-            .map(validation -> (TopicValidation) validation)
+            .map(TopicValidation.class::cast)
             .collect(Collectors.toList());
 
     Stream<Topic> streamOfTopics =
-        topology.getProjects().stream()
-            .flatMap((Function<Project, Stream<Topic>>) project -> project.getTopics().stream());
+        topology.getProjects().stream().map(Project::getTopics).flatMap(Collection::stream);
 
-    Stream<Either<Boolean, ValidationException>> streamOfTopicResults =
+    var streamOfTopicResults =
         streamOfTopics.flatMap(
-            (Function<Topic, Stream<Either<Boolean, ValidationException>>>)
-                topic ->
-                    listOfTopicValidations.stream()
-                        .map(
-                            validation -> {
-                              try {
-                                validation.valid(topic);
-                                return Either.Left(true);
-                              } catch (ValidationException ex) {
-                                return Either.Right(ex);
-                              }
-                            }));
+            topic ->
+                listOfTopicValidations.stream()
+                    .flatMap(
+                        validation -> {
+                          try {
+                            validation.valid(topic);
+                            return Stream.empty();
+                          } catch (ValidationException ex) {
+                            return Stream.of(ex);
+                          }
+                        }));
 
     return Stream.concat(streamOfTopologyResults, streamOfTopicResults)
-        .filter(Either::isRight)
-        .map(either -> either.getRight().get().getMessage())
+        .map(ValidationException::getMessage)
         .collect(Collectors.toList());
   }
 

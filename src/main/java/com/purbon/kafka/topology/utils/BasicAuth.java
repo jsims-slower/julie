@@ -2,7 +2,9 @@ package com.purbon.kafka.topology.utils;
 
 import java.util.Base64;
 import java.util.Objects;
+import lombok.Getter;
 
+@Getter
 public class BasicAuth {
   private final String user;
   private final String password;
@@ -10,14 +12,6 @@ public class BasicAuth {
   public BasicAuth(String user, String password) {
     this.user = Objects.requireNonNull(user);
     this.password = Objects.requireNonNull(password);
-  }
-
-  public String getUser() {
-    return user;
-  }
-
-  public String getPassword() {
-    return password;
   }
 
   /**

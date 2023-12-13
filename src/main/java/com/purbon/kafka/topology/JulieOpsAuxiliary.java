@@ -4,7 +4,6 @@ import com.purbon.kafka.topology.api.connect.KConnectApiClient;
 import com.purbon.kafka.topology.api.ksql.KsqlApiClient;
 import com.purbon.kafka.topology.audit.*;
 import com.purbon.kafka.topology.backend.*;
-import com.purbon.kafka.topology.utils.Pair;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -56,10 +55,8 @@ public class JulieOpsAuxiliary {
       Configuration config, String topologyFileOrDir) throws IOException {
     Map<String, KConnectApiClient> clients = new HashMap<>();
     for (var entry : config.getKafkaConnectServers().entrySet()) {
-      var pair =
-          new Pair<>(
-              entry.getKey(), new KConnectApiClient(entry.getValue(), entry.getKey(), config));
-      if (clients.put(pair.getKey(), pair.getValue()) != null) {
+      var value = new KConnectApiClient(entry.getValue(), entry.getKey(), config);
+      if (clients.put(entry.getKey(), value) != null) {
         throw new IllegalStateException("Duplicate key");
       }
     }

@@ -10,12 +10,8 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.common.quota.ClientQuotaAlteration;
 import org.apache.kafka.common.quota.ClientQuotaEntity;
 import org.apache.kafka.common.quota.ClientQuotaFilter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class QuotasManager {
-
-  private static final Logger LOGGER = LogManager.getLogger(QuotasManager.class);
 
   private final AdminClient adminClient;
   // private final TopologyBuilderAdminClient adminClient;

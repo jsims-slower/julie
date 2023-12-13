@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.Streams;
 import com.purbon.kafka.topology.Configuration;
 import com.purbon.kafka.topology.exceptions.TopologyParsingException;
 import com.purbon.kafka.topology.exceptions.ValidationException;
@@ -19,7 +20,6 @@ import com.purbon.kafka.topology.model.User;
 import com.purbon.kafka.topology.model.schema.TopicSchemas;
 import com.purbon.kafka.topology.model.users.Consumer;
 import com.purbon.kafka.topology.model.users.Producer;
-import com.purbon.kafka.topology.utils.Either;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,9 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -105,27 +103,15 @@ public class TopicCustomDeserializer extends StdDeserializer<Topic> {
           schemasNode instanceof ArrayNode
               ? schemasNode.elements()
               : singletonList(schemasNode).iterator();
-      Iterable<JsonNode> iterable = () -> it;
 
-      List<Either<ValidationException, TopicSchemas>> listOfResultsOrErrors =
-          StreamSupport.stream(iterable.spliterator(), true)
-              .map(validateAndBuildSchemas(topic))
-              .collect(Collectors.toList());
-
-      List<ValidationException> errors =
-          listOfResultsOrErrors.stream()
-              .map(Either::getLeft)
-              .flatMap(Optional::stream)
-              .collect(Collectors.toList());
-      if (!errors.isEmpty()) {
-        throw new IOException(errors.get(0));
+      while (it.hasNext()) {
+        var node = it.next();
+        try {
+          schemas.add(validateAndBuildSchemas(node, topic));
+        } catch (ValidationException ex) {
+          throw new IOException(ex);
+        }
       }
-
-      schemas =
-          listOfResultsOrErrors.stream()
-              .map(Either::getRight)
-              .flatMap(Optional::stream)
-              .collect(Collectors.toList());
     }
 
     if (schemas.size() > 1 && topic.getSubjectNameStrategy().equals(TOPIC_NAME_STRATEGY)) {
@@ -159,28 +145,19 @@ public class TopicCustomDeserializer extends StdDeserializer<Topic> {
         .orElse(new HashMap<>());
   }
 
-  private Function<JsonNode, Either<ValidationException, TopicSchemas>> validateAndBuildSchemas(
-      Topic topic) {
-    return node -> {
-      List<String> elements = new ArrayList<>();
-      node.fieldNames().forEachRemaining(elements::add);
-      try {
-        validateSchemaKeys(elements, topic);
-        TopicSchemas schema =
-            new TopicSchemas(
-                Optional.ofNullable(node.get("key.schema.file")),
-                Optional.ofNullable(node.get("key.record.type")),
-                Optional.ofNullable(node.get("key.format")),
-                Optional.ofNullable(node.get("key.compatibility")),
-                Optional.ofNullable(node.get("value.schema.file")),
-                Optional.ofNullable(node.get("value.record.type")),
-                Optional.ofNullable(node.get("value.format")),
-                Optional.ofNullable(node.get("value.compatibility")));
-        return Either.Right(schema);
-      } catch (ValidationException ex) {
-        return Either.Left(ex);
-      }
-    };
+  private TopicSchemas validateAndBuildSchemas(JsonNode node, Topic topic)
+      throws ValidationException {
+    List<String> elements = Streams.stream(node.fieldNames()).collect(Collectors.toList());
+    validateSchemaKeys(elements, topic);
+    return new TopicSchemas(
+        Optional.ofNullable(node.get("key.schema.file")),
+        Optional.ofNullable(node.get("key.record.type")),
+        Optional.ofNullable(node.get("key.format")),
+        Optional.ofNullable(node.get("key.compatibility")),
+        Optional.ofNullable(node.get("value.schema.file")),
+        Optional.ofNullable(node.get("value.record.type")),
+        Optional.ofNullable(node.get("value.format")),
+        Optional.ofNullable(node.get("value.compatibility")));
   }
 
   private void validateSchemaKeys(List<String> elements, Topic topic) throws ValidationException {

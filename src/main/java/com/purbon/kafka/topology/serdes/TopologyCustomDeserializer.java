@@ -29,15 +29,14 @@ import com.purbon.kafka.topology.model.users.platform.Kafka;
 import com.purbon.kafka.topology.model.users.platform.KafkaConnect;
 import com.purbon.kafka.topology.model.users.platform.KsqlServer;
 import com.purbon.kafka.topology.model.users.platform.SchemaRegistry;
-import com.purbon.kafka.topology.utils.Pair;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 @Slf4j
 public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
@@ -121,7 +120,7 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
 
     JsonNode platformNode = rootNode.get(PLATFORM_KEY);
     Platform platform = new Platform();
-    if (platformNode != null && platformNode.size() > 0) {
+    if (platformNode != null && !platformNode.isEmpty()) {
       parse(platformNode, KAFKA_KEY, parser, Kafka.class)
           .ifPresent(obj -> platform.setKafka((Kafka) obj));
       parse(platformNode, KAFKA_CONNECT_KEY, parser, KafkaConnect.class)
@@ -150,7 +149,7 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
     }
 
     JsonNode specialTopicsNode = rootNode.get(SPECIAL_TOPICS_NODE);
-    if (specialTopicsNode != null && specialTopicsNode.size() > 0) {
+    if (specialTopicsNode != null && !specialTopicsNode.isEmpty()) {
       for (int i = 0; i < specialTopicsNode.size(); i++) {
         JsonNode node = specialTopicsNode.get(i);
         var topic = parser.getCodec().treeToValue(node, Topic.class);
@@ -469,15 +468,15 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
         .map(
             node -> {
               String key = node.fieldNames().next();
-              return new Pair<>(key, node.get(key));
+              return new ImmutablePair<>(key, node.get(key));
             })
         .flatMap(
-            (Function<Pair<String, JsonNode>, Stream<Pair<String, String>>>)
-                principals ->
-                    StreamSupport.stream(principals.getValue().spliterator(), true)
-                        .map(
-                            node ->
-                                new Pair<>(principals.getKey(), node.get(PRINCIPAL_KEY).asText())))
-        .collect(groupingBy(Pair::getKey, mapping(Pair::getValue, toList())));
+            principals ->
+                StreamSupport.stream(principals.getValue().spliterator(), true)
+                    .map(
+                        node ->
+                            ImmutablePair.of(
+                                principals.getKey(), node.get(PRINCIPAL_KEY).asText())))
+        .collect(groupingBy(ImmutablePair::getKey, mapping(ImmutablePair::getValue, toList())));
   }
 }
