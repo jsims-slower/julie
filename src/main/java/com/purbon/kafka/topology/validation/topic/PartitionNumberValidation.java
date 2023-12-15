@@ -11,7 +11,7 @@ import com.purbon.kafka.topology.validation.TopicValidation;
 import com.typesafe.config.ConfigException;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.logging.log4j.util.Strings;
+import org.apache.commons.lang3.StringUtils;
 
 public class PartitionNumberValidation implements TopicValidation {
 
@@ -81,7 +81,7 @@ public class PartitionNumberValidation implements TopicValidation {
           String.format(
               "PartitionNumberValidation requires you to define a partition number "
                   + "comparison op in config '%s' with a supported operations code - %s.",
-              TOPOLOGY_VALIDATIONS_PARTITION_NUMBER_OP, Strings.join(validOpCodes, ','));
+              TOPOLOGY_VALIDATIONS_PARTITION_NUMBER_OP, StringUtils.join(validOpCodes, ','));
       throw new ConfigurationException(msg);
     }
   }

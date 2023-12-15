@@ -2,7 +2,6 @@ package com.purbon.kafka.topology.api.mds;
 
 import com.purbon.kafka.topology.Configuration;
 import java.io.IOException;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -17,7 +16,7 @@ public class MDSApiClientBuilder {
   public MDSApiClient build() throws IOException {
     String mdsServer = config.getMdsServer();
 
-    MDSApiClient apiClient = new MDSApiClient(mdsServer, Optional.of(config));
+    MDSApiClient apiClient = new MDSApiClient(mdsServer, config);
     // Pass Cluster IDS
     apiClient.setKafkaClusterId(config.getKafkaClusterId());
     apiClient.setSchemaRegistryClusterID(config.getSchemaRegistryClusterId());

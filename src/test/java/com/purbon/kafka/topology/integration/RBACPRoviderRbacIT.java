@@ -267,12 +267,12 @@ public class RBACPRoviderRbacIT extends MDSBaseTest {
     Project project =
         new ProjectImpl(
             "name",
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.of(connectors),
-            Optional.empty(),
-            Optional.empty(),
+            null,
+            null,
+            null,
+            connectors,
+            null,
+            null,
             Collections.emptyMap(),
             Collections.emptyList(),
             new Configuration());
@@ -330,12 +330,12 @@ public class RBACPRoviderRbacIT extends MDSBaseTest {
     Project project =
         new ProjectImpl(
             "name",
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.of(schemas),
-            Optional.empty(),
+            null,
+            null,
+            null,
+            null,
+            schemas,
+            null,
             Collections.emptyMap(),
             Collections.emptyList(),
             new Configuration());
@@ -381,12 +381,12 @@ public class RBACPRoviderRbacIT extends MDSBaseTest {
     Project project =
         new ProjectImpl(
             "name",
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.of(schemas),
-            Optional.empty(),
+            null,
+            null,
+            null,
+            null,
+            schemas,
+            null,
             Collections.emptyMap(),
             Collections.emptyList(),
             new Configuration());

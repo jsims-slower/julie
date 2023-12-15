@@ -236,12 +236,12 @@ public class TopologyCustomDeserializer extends StdDeserializer<Topology> {
     ProjectImpl project =
         new ProjectImpl(
             rootNode.get(NAME_KEY).asText(),
-            Optional.ofNullable(consumerPS),
-            Optional.ofNullable(producerPS),
-            Optional.ofNullable(kStreamPS),
-            Optional.ofNullable(connectorPS),
-            Optional.ofNullable(schemasPS),
-            Optional.ofNullable(kSqlAppPS),
+            consumerPS,
+            producerPS,
+            kStreamPS,
+            connectorPS,
+            schemasPS,
+            kSqlAppPS,
             parseOptionalRbacRoles(rootNode.get(RBAC_KEY)),
             filterOthers(othersPS),
             config);

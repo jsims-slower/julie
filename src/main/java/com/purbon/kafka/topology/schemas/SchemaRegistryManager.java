@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SchemaRegistryManager {
   /**
-   * @see io.confluent.kafka.schemaregistry.rest.exceptions.Errors
+   * @see io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException
    */
   public static final int SUBJECT_NOT_FOUND_ERROR_CODE = 40401;
 

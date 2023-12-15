@@ -15,26 +15,28 @@ public class ClusterIDs implements Cloneable {
   private String schemaRegistryClusterID;
   private String connectClusterID;
   private String ksqlClusterID;
-  private List<String> validClusterIds;
+  private final List<String> validClusterIds;
 
   public static String KAFKA_CLUSTER_ID_LABEL = "kafka-cluster";
   public static String SCHEMA_REGISTRY_CLUSTER_ID_LABEL = "schema-registry-cluster";
   public static String CONNECT_CLUSTER_ID_LABEL = "connect-cluster";
   public static String KSQL_CLUSTER_ID_LABEL = "ksql-cluster";
 
-  private Map<String, String> clusterIds;
+  private final Map<String, String> clusterIds;
 
   public ClusterIDs() {
-    this(Optional.empty());
+    this(null);
   }
 
-  public ClusterIDs(Optional<Configuration> configOptional) {
+  public ClusterIDs(Configuration config) {
     this.connectClusterID = "";
     this.kafkaClusterID = "";
     this.schemaRegistryClusterID = "";
     this.clusterIds = new HashMap<>();
-    this.validClusterIds = new ArrayList<>();
-    configOptional.ifPresent(config -> validClusterIds = config.getValidClusterIds());
+    this.validClusterIds =
+        Optional.ofNullable(config)
+            .map(Configuration::getValidClusterIds)
+            .orElseGet(ArrayList::new);
   }
 
   public Map<String, Map<String, String>> getKafkaClusterIds() {

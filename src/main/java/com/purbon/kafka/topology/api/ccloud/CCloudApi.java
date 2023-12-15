@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -41,8 +40,8 @@ public class CCloudApi {
 
   public CCloudApi(String baseServerUrl, Configuration config) throws IOException {
     this(
-        new JulieHttpClient(baseServerUrl, Optional.of(config)),
-        new JulieHttpClient(ccloudApiBaseUrl, Optional.of(config)),
+        new JulieHttpClient(baseServerUrl, config),
+        new JulieHttpClient(ccloudApiBaseUrl, config),
         config);
   }
 

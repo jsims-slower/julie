@@ -12,9 +12,8 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.purbon.kafka.topology.Configuration;
 import com.purbon.kafka.topology.utils.PTHttpClient;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,23 +21,23 @@ import org.junit.jupiter.api.Test;
 @WireMockTest(httpPort = 8089)
 public class JulieHttpClientTest {
 
-  private Map<String, String> cliOps = new HashMap<>();
-  private Properties props = new Properties();
+  private final Map<String, String> cliOps = Collections.singletonMap(BROKERS_OPTION, "");
+  private final Properties props = new Properties();
 
   private PTHttpClient client;
 
   @BeforeEach
-  public void before(WireMockRuntimeInfo wireMockRuntimeInfo) throws IOException {
-    cliOps.put(BROKERS_OPTION, "");
-
+  public void before() throws IOException {
     props.put(JULIE_HTTP_BACKOFF_TIME_MS, 0);
-    Configuration config = new Configuration(cliOps, props);
-
-    client = new PTHttpClient(wireMockRuntimeInfo.getHttpBaseUrl(), Optional.of(config));
   }
 
   @Test
-  public void shouldResponseFastToNonRetryErrorCodes() throws IOException {
+  public void shouldResponseFastToNonRetryErrorCodes(WireMockRuntimeInfo wireMockRuntimeInfo)
+      throws IOException {
+    Configuration config = new Configuration(cliOps, props);
+
+    client = new PTHttpClient(wireMockRuntimeInfo.getHttpBaseUrl(), config);
+
     stubFor(
         get(urlEqualTo("/some/thing"))
             .willReturn(
@@ -52,15 +51,10 @@ public class JulieHttpClientTest {
   public void shouldRunTheRetryFlowForRetrievableErrorCodes(WireMockRuntimeInfo wireMockRuntimeInfo)
       throws IOException {
 
-    cliOps = new HashMap<>();
-    cliOps.put(BROKERS_OPTION, "");
-    props = new Properties();
-
-    props.put(JULIE_HTTP_BACKOFF_TIME_MS, 0);
     props.put(JULIE_HTTP_RETRY_TIMES, 5);
     Configuration config = new Configuration(cliOps, props);
 
-    client = new PTHttpClient(wireMockRuntimeInfo.getHttpBaseUrl(), Optional.of(config));
+    client = new PTHttpClient(wireMockRuntimeInfo.getHttpBaseUrl(), config);
 
     stubFor(
         get(urlEqualTo("/some/thing"))

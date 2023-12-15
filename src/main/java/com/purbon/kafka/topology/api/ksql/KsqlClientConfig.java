@@ -3,7 +3,9 @@ package com.purbon.kafka.topology.api.ksql;
 import com.purbon.kafka.topology.utils.BasicAuth;
 import java.net.MalformedURLException;
 import java.net.URL;
+import lombok.Getter;
 
+@Getter
 public class KsqlClientConfig {
 
   private final URL server;
@@ -34,40 +36,12 @@ public class KsqlClientConfig {
     return new Builder();
   }
 
-  public URL getServer() {
-    return this.server;
-  }
-
   public boolean useAlpn() {
     return useAlpn;
   }
 
-  public String getKeyStore() {
-    return keyStore;
-  }
-
-  public String getKeyStorePassword() {
-    return keyStorePassword;
-  }
-
-  public String getTrustStore() {
-    return trustStore;
-  }
-
-  public String getTrustStorePassword() {
-    return trustStorePassword;
-  }
-
-  public boolean isVerifyHost() {
-    return verifyHost;
-  }
-
   public boolean useBasicAuth() {
     return basicAuth != null;
-  }
-
-  public BasicAuth getBasicAuth() {
-    return basicAuth;
   }
 
   public static class Builder {

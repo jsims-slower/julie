@@ -11,7 +11,7 @@ import com.purbon.kafka.topology.validation.TopicValidation;
 import com.typesafe.config.ConfigException;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.logging.log4j.util.Strings;
+import org.apache.commons.lang3.StringUtils;
 
 public class ReplicationFactorValidation implements TopicValidation {
 
@@ -83,7 +83,7 @@ public class ReplicationFactorValidation implements TopicValidation {
           String.format(
               "ReplicationFactorValidation requires you to define a replication factor "
                   + "comparison op in config '%s' with a supported operations code - %s.",
-              TOPOLOGY_VALIDATIONS_REPLICATION_FACTOR_OP, Strings.join(validOpCodes, ','));
+              TOPOLOGY_VALIDATIONS_REPLICATION_FACTOR_OP, StringUtils.join(validOpCodes, ','));
       throw new ConfigurationException(msg);
     }
   }

@@ -3,15 +3,16 @@ package com.purbon.kafka.topology.model.users;
 import com.purbon.kafka.topology.model.User;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class Consumer extends User {
 
-  private Optional<String> group;
-
-  public Consumer() {
-    super();
-    group = Optional.empty();
-  }
+  private String group;
 
   public Consumer(String principal) {
     this(principal, null);
@@ -19,19 +20,11 @@ public class Consumer extends User {
 
   public Consumer(String principal, String group) {
     super(principal);
-    this.group = Optional.ofNullable(group);
+    this.group = group;
   }
 
   public String groupString() {
-    return group.orElse("*");
-  }
-
-  public Optional<String> getGroup() {
-    return group;
-  }
-
-  public void setGroup(Optional<String> group) {
-    this.group = group;
+    return Optional.ofNullable(group).orElse("*");
   }
 
   @Override

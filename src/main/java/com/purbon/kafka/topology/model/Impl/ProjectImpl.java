@@ -17,13 +17,18 @@ import com.purbon.kafka.topology.model.users.Schemas;
 import com.purbon.kafka.topology.utils.JinjaUtils;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProjectImpl implements Project, Cloneable {
 
-  @JsonIgnore private Configuration config;
+  @JsonIgnore private final Configuration config;
 
-  private String name;
-  private List<String> zookeepers;
+  @Getter private final String name;
+  @Getter private final List<String> zookeepers;
 
   private PlatformSystem<Consumer> consumers;
   private PlatformSystem<Producer> producers;
@@ -31,10 +36,10 @@ public class ProjectImpl implements Project, Cloneable {
   private PlatformSystem<KSqlApp> ksqls;
   private PlatformSystem<Connector> connectors;
   private PlatformSystem<Schemas> schemas;
-  private Map<String, List<String>> rbacRawRoles;
+  @Setter @Getter private Map<String, List<String>> rbacRawRoles;
   private List<Map.Entry<String, PlatformSystem<Other>>> others;
 
-  private List<Topic> topics;
+  @Getter private final List<Topic> topics;
 
   @JsonIgnore private List<String> order;
   @JsonIgnore private Map<String, Object> prefixContext;
@@ -50,12 +55,12 @@ public class ProjectImpl implements Project, Cloneable {
   public ProjectImpl(String name, Configuration config) {
     this(
         name,
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         Collections.emptyMap(),
         Collections.emptyList(),
         config);
@@ -63,25 +68,25 @@ public class ProjectImpl implements Project, Cloneable {
 
   public ProjectImpl(
       String name,
-      Optional<PlatformSystem<Consumer>> consumers,
-      Optional<PlatformSystem<Producer>> producers,
-      Optional<PlatformSystem<KStream>> streams,
-      Optional<PlatformSystem<Connector>> connectors,
-      Optional<PlatformSystem<Schemas>> schemas,
-      Optional<PlatformSystem<KSqlApp>> ksqls,
+      PlatformSystem<Consumer> consumers,
+      PlatformSystem<Producer> producers,
+      PlatformSystem<KStream> streams,
+      PlatformSystem<Connector> connectors,
+      PlatformSystem<Schemas> schemas,
+      PlatformSystem<KSqlApp> ksqls,
       Map<String, List<String>> rbacRawRoles,
       List<Map.Entry<String, PlatformSystem<Other>>> others,
       Configuration config) {
     this(
         name,
         new ArrayList<>(),
-        consumers.orElse(new PlatformSystem<>()),
-        producers.orElse(new PlatformSystem<>()),
-        streams.orElse(new PlatformSystem<>()),
+        Optional.ofNullable(consumers).orElseGet(PlatformSystem::new),
+        Optional.ofNullable(producers).orElseGet(PlatformSystem::new),
+        Optional.ofNullable(streams).orElseGet(PlatformSystem::new),
         new ArrayList<>(),
-        connectors.orElse(new PlatformSystem<>()),
-        schemas.orElse(new PlatformSystem<>()),
-        ksqls.orElse(new PlatformSystem<>()),
+        Optional.ofNullable(connectors).orElseGet(PlatformSystem::new),
+        Optional.ofNullable(schemas).orElseGet(PlatformSystem::new),
+        Optional.ofNullable(ksqls).orElseGet(PlatformSystem::new),
         rbacRawRoles,
         others,
         config);
@@ -114,14 +119,6 @@ public class ProjectImpl implements Project, Cloneable {
     this.config = config;
     this.prefixContext = new HashMap<>();
     this.order = new ArrayList<>();
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public List<String> getZookeepers() {
-    return zookeepers;
   }
 
   public List<Consumer> getConsumers() {
@@ -161,11 +158,12 @@ public class ProjectImpl implements Project, Cloneable {
   }
 
   public KConnectArtefacts getConnectorArtefacts() {
-    return (KConnectArtefacts) connectors.getArtefacts().orElse(new KConnectArtefacts());
+    return (KConnectArtefacts)
+        Optional.ofNullable(connectors.getArtefacts()).orElse(new KConnectArtefacts());
   }
 
   public KsqlArtefacts getKsqlArtefacts() {
-    return (KsqlArtefacts) ksqls.getArtefacts().orElse(new KsqlArtefacts());
+    return (KsqlArtefacts) Optional.ofNullable(ksqls.getArtefacts()).orElse(new KsqlArtefacts());
   }
 
   public void setConnectors(List<Connector> connectors) {
@@ -174,8 +172,7 @@ public class ProjectImpl implements Project, Cloneable {
 
   public Map<String, List<Other>> getOthers() {
     return this.others.stream()
-        .map(e -> Map.entry(e.getKey(), e.getValue().getAccessControlLists()))
-        .collect(Collectors.toMap(km -> km.getKey(), vm -> vm.getValue()));
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getAccessControlLists()));
   }
 
   public void setOthers(Map<String, List<Other>> others) {
@@ -183,10 +180,6 @@ public class ProjectImpl implements Project, Cloneable {
         others.entrySet().stream()
             .map(entry -> Map.entry(entry.getKey(), new PlatformSystem<>(entry.getValue())))
             .collect(Collectors.toList());
-  }
-
-  public List<Topic> getTopics() {
-    return topics;
   }
 
   public void addTopic(Topic topic) {
@@ -211,12 +204,10 @@ public class ProjectImpl implements Project, Cloneable {
   }
 
   private String namePrefix(String topologyPrefix) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(topologyPrefix)
-        .append(config.getTopicPrefixSeparator())
-        .append(name)
-        .append(config.getTopicPrefixSeparator());
-    return sb.toString();
+    return topologyPrefix
+        + config.getTopicPrefixSeparator()
+        + name
+        + config.getTopicPrefixSeparator();
   }
 
   private String buildNamePrefix() {
@@ -227,14 +218,6 @@ public class ProjectImpl implements Project, Cloneable {
       sb.append(prefixContext.get(key));
     }
     return sb.toString();
-  }
-
-  public void setRbacRawRoles(Map<String, List<String>> rbacRawRoles) {
-    this.rbacRawRoles = rbacRawRoles;
-  }
-
-  public Map<String, List<String>> getRbacRawRoles() {
-    return rbacRawRoles;
   }
 
   @Override

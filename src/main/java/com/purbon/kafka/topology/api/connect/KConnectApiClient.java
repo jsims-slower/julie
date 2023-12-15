@@ -29,7 +29,7 @@ public class KConnectApiClient extends JulieHttpClient implements ArtefactClient
   private final String label;
 
   public KConnectApiClient(String server, String label, Configuration config) throws IOException {
-    super(server, Optional.of(config));
+    super(server, config);
     this.label = label;
     // configure basic authentication if available
     Map<String, String> basicAuths = config.getServersBasicAuthMap();

@@ -43,26 +43,24 @@ public class JulieHttpClient {
   @Getter protected final String server;
   private String token;
 
-  private int retryTimes;
-  private int backoffTimesMs;
+  private final int retryTimes;
+  private final int backoffTimesMs;
 
   public JulieHttpClient(String server) throws IOException {
-    this(server, Optional.empty());
+    this(server, null);
   }
 
-  public JulieHttpClient(String server, Optional<Configuration> configOptional) throws IOException {
+  public JulieHttpClient(String server, Configuration config) throws IOException {
     this.server = server;
     this.token = "";
-    this.httpClient = configureHttpOrHttpsClient(configOptional);
-    configOptional.ifPresentOrElse(
-        e -> {
-          retryTimes = e.getHttpRetryTimes();
-          backoffTimesMs = e.getHttpBackoffTimeMs();
-        },
-        () -> {
-          retryTimes = 0;
-          backoffTimesMs = 0;
-        });
+    this.httpClient = configureHttpOrHttpsClient(config);
+    if (config != null) {
+      retryTimes = config.getHttpRetryTimes();
+      backoffTimesMs = config.getHttpBackoffTimeMs();
+    } else {
+      retryTimes = 0;
+      backoffTimesMs = 0;
+    }
   }
 
   private HttpRequest.Builder setupARequest(String url, long timeoutMs) {
@@ -77,19 +75,16 @@ public class JulieHttpClient {
     return builder;
   }
 
-  protected HttpClient configureHttpOrHttpsClient(Optional<Configuration> configOptional)
-      throws IOException {
-    if (configOptional.isEmpty()) {
+  protected HttpClient configureHttpOrHttpsClient(Configuration config) throws IOException {
+    if (config == null) {
       return HttpClient.newBuilder().build();
     }
-    Configuration config = configOptional.get();
 
-    SSLContext sslContext = null;
+    final SSLContext sslContext;
 
     try {
-      sslContext = SSLContext.getInstance("TLS");
-
       if (areKeyStoreConfigured(config)) {
+        sslContext = SSLContext.getInstance("TLS");
         var keyManagers = getKeyManagersFromKeyStore(config);
         var trustManagers = getTrustManagersFromTrustStore(config);
         sslContext.init(keyManagers, trustManagers, null);

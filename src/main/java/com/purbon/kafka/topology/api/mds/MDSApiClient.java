@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -33,25 +32,22 @@ public class MDSApiClient extends JulieHttpClient {
   private final ClusterIDs clusterIDs;
 
   public MDSApiClient(String mdsServer) throws IOException {
-    this(mdsServer, Optional.empty());
+    this(mdsServer, null);
   }
 
-  public MDSApiClient(String mdsServer, Optional<Configuration> configOptional) throws IOException {
-    super(mdsServer, configOptional);
-    this.clusterIDs = new ClusterIDs(configOptional);
+  public MDSApiClient(String mdsServer, Configuration config) throws IOException {
+    super(mdsServer, config);
+    this.clusterIDs = new ClusterIDs(config);
   }
 
   @Override
-  protected HttpClient configureHttpOrHttpsClient(Optional<Configuration> configOptional)
-      throws IOException {
-    if (configOptional.isEmpty()) {
+  protected HttpClient configureHttpOrHttpsClient(Configuration config) throws IOException {
+    if (config == null) {
       return HttpClient.newBuilder().build();
     }
 
-    Configuration config = configOptional.get();
-
     if (!config.mdsInsecureAllowed()) {
-      return super.configureHttpOrHttpsClient(configOptional);
+      return super.configureHttpOrHttpsClient(config);
     } else {
       return trustAllClient();
     }
